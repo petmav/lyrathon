@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { pool } from '@/lib/db';
 import { generateEmbedding, getEmbeddingModel } from '@/lib/embeddings';
 import { vectorToSql } from '@/lib/vector';
+import type { CandidateInputPayload } from '@/lib/schemas';
 
 export type PreviousPosition = {
   title: string;
@@ -16,23 +17,7 @@ export type EducationEntry = {
   graduation_year?: number;
 };
 
-export type CandidateInput = {
-  name: string;
-  email: string;
-  age?: number;
-  current_position?: string;
-  location?: string;
-  visa_status?: string;
-  experience_years?: number;
-  salary_expectation?: number;
-  availability_date?: string;
-  skills_text?: string;
-  awards_text?: string;
-  certifications_text?: string;
-  projects_text?: string;
-  previous_positions?: PreviousPosition[];
-  education?: EducationEntry[];
-};
+export type CandidateInput = CandidateInputPayload;
 
 export type CandidateRecord = CandidateInput & {
   candidate_id: string;
@@ -69,6 +54,7 @@ export async function saveCandidate(
           name,
           age,
           email,
+          password_hash,
           current_position,
           location,
           visa_status,
@@ -82,14 +68,15 @@ export async function saveCandidate(
           previous_positions,
           education
         ) VALUES (
-          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16
         )
         RETURNING *
       `,
       [
         input.name,
-        input.age ?? null,
+        input.age,
         input.email,
+        input.password_hash,
         normalizeCurrentPosition(input.current_position),
         input.location ?? null,
         input.visa_status ?? null,
@@ -120,6 +107,8 @@ export async function saveCandidate(
 
   if (hasField('name')) pushUpdate('name', input.name ?? null);
   if (hasField('age')) pushUpdate('age', input.age ?? null);
+  if (hasField('password_hash'))
+    pushUpdate('password_hash', input.password_hash ?? null);
   if (hasField('current_position'))
     pushUpdate('current_position', normalizeCurrentPosition(input.current_position));
   if (hasField('location')) pushUpdate('location', input.location ?? null);

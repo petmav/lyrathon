@@ -47,7 +47,7 @@ PostgreSQL powers the candidate/recruiter data model. To run it locally:
 
 ### Sample data
 
-Seed the database with a few candidates, recruiters, and documents:
+Seed the database with recruiters, documents, and 60+ synthetic candidates that exercise overlapping skillsets for semantic search demos:
 
 ```bash
 ./scripts/db-seed.sh
@@ -56,7 +56,7 @@ Seed the database with a few candidates, recruiters, and documents:
 scripts\db-seed.bat
 ```
 
-These helpers start the PostgreSQL container if needed, wait for it to accept connections, and then stream `db/seeds/seed.sql`, which you can extend with additional demo records as needed.
+These helpers start the PostgreSQL container if needed, wait for it to accept connections, and then stream `db/seeds/seed.sql` followed by `db/seeds/candidates_small.sql`, which contains 60+ synthetic candidates for semantic differentiation demos.
 
 ### One-command setup
 
@@ -71,13 +71,22 @@ scripts\setup.bat
 
 After it finishes, edit `.env` with your own secrets and start the dev server with `npm run dev`.
 
+Need to reset everything? Use the reset helper to bring the container down (dropping volumes) and re-run the full setup:
+
+```bash
+./scripts/db-reset.sh
+```
+```powershell
+scripts\db-reset.bat
+```
+
 ## API
 
-Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL` / `OPENAI_EMBEDDING_MODEL`) in `.env` to enable LLM-powered query parsing and embeddings. The default embedding model is `text-embedding-3-small` (1536 dimensions) to stay within pgvector’s 2000-dimension index limit. Key endpoints:
+Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL` / `OPENAI_EMBEDDING_MODEL` / `OPENAI_SHORTLIST_MODEL`) in `.env` to enable LLM-powered query parsing, semantic retrieval, and final shortlisting. Add `LOG_WEBHOOK_URL` if you want logs posted to an external endpoint; otherwise they are printed to stdout. The default embedding model is `text-embedding-3-small` (1536 dimensions) to stay within pgvector’s 2000-dimension index limit. Key endpoints:
 
 ### `/api/candidates`
 
-Filtered candidate search over PostgreSQL. `searchTerm` is required (used for keywords), while every other field is optional and treated as a preference rather than a hard requirement. Send a POST request with JSON filters:
+Filtered candidate search over PostgreSQL. Request bodies are validated with Zod (`candidateFiltersSchema`), so `searchTerm` must be a non-empty string while every other field is optional and treated as a preference. Invalid shapes return `400` with `details` describing the field errors. Example:
 
 ```bash
 curl -X POST http://localhost:3000/api/candidates \
@@ -93,11 +102,11 @@ curl -X POST http://localhost:3000/api/candidates \
   }'
 ```
 
-The route applies the keyword match as the only hard filter, then boosts candidates who align with the optional hints (location aliases, visa readiness, experience, compensation, availability) before returning results.
+The route applies the keyword match as the only hard filter, boosts candidates who align with the optional hints (location aliases, visa readiness, experience, compensation, availability), validates the response shape, and returns `{ "data": Candidate[] }`.
 
 ### `/api/query`
 
-Turns natural-language recruiter prompts into structured filters via OpenAI before executing the search:
+Turns natural-language recruiter prompts into structured filters via OpenAI before executing the search. Request bodies must match `{"query": string, "limit"?: number<=100}`. The endpoint sanitizes LLM output back through the same filter schema to ensure only valid data is used:
 
 ```bash
 curl -X POST http://localhost:3000/api/query \
@@ -110,16 +119,38 @@ curl -X POST http://localhost:3000/api/query \
 
 Response includes the inferred filters plus the shortlisted candidates. If `OPENAI_API_KEY` is not configured, the endpoint falls back to keyword-only matching.
 
+### `/api/query/shortlist`
+
+Complete recruiter flow: parse intent → apply filters → retrieve semantic matches → generate an LLM-powered shortlist with recommendations. Request schema mirrors `/api/query` and responses adhere to `shortlistResponseSchema`. When the LLM fails or returns invalid JSON, the API falls back to a deterministic shortlist derived from SQL results so the schema is still satisfied.
+
+```bash
+curl -X POST http://localhost:3000/api/query/shortlist \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Looking for a staff-level backend engineer in Toronto with GraphQL experience, TN visa ready.",
+    "limit": 5
+  }'
+```
+
+The response contains the structured shortlist (candidate IDs, age, email, location, match summary, recommended action, confidence) plus the filters applied. When `OPENAI_API_KEY` is not set, the endpoint simply returns the fallback shortlist with neutral scores. Empty candidate pools return a valid response with `shortlist: []` and an explanatory summary.
+
+## Monitoring & Tests
+
+- **Logging**: Set `LOG_WEBHOOK_URL` to have every API call post structured logs (duration, results, errors) to your monitoring endpoint. When unset, events print to stdout/stderr.
+- **Unit tests**: Run `npm test` (Jest + ts-jest) to verify query parsing fallbacks, search tokenisation, and shortlist fallback behaviour. Add additional cases in the `tests/` directory as you expand the RAG pipeline.
+
 ### `/api/candidates/register`
 
-Intake endpoint for candidate submissions. POST candidate details (name, email, skills, etc.) to persist the record and trigger embedding generation immediately:
+Intake endpoint for candidate submissions. The payload must satisfy `candidateInputSchema` (name/email/password hash/age required; optional fields are sanitized). Violations return `400` with field-level errors. Successful submissions persist the record, refresh embeddings, and respond with the validated candidate shape (excluding the password hash):
 
 ```bash
 curl -X POST http://localhost:3000/api/candidates/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Kai Patel",
+    "age": 33,
     "email": "kai@example.com",
+    "password_hash": "$2a$10$exampleCandidateKai",
     "current_position": "Senior Backend Engineer",
     "location": "Toronto, CA",
     "skills_text": "Go, AWS, PostgreSQL, GraphQL, distributed systems",
@@ -127,7 +158,23 @@ curl -X POST http://localhost:3000/api/candidates/register \
   }'
 ```
 
-Successful ingestion will create/update embeddings in `candidate_embeddings`, keeping the vector index synchronized with SQL changes.
+Response:
+
+```json
+{
+  "data": {
+    "candidate_id": "uuid",
+    "name": "Kai Patel",
+    "age": 33,
+    "email": "kai@example.com",
+    "current_position": "Senior Backend Engineer",
+    "...": "..."
+  },
+  "embeddingUpdated": true
+}
+```
+
+Every response is validated against the published schema (`candidateRegistrationResponseSchema`) before being sent, guarding downstream consumers from shape drift.
 
 ## Retrieval Flow
 
