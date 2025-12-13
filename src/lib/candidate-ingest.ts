@@ -19,7 +19,8 @@ export type EducationEntry = {
 export type CandidateInput = {
   name: string;
   email: string;
-  age?: number;
+  age: number;
+  password_hash: string;
   current_position?: string;
   location?: string;
   visa_status?: string;
@@ -69,6 +70,7 @@ export async function saveCandidate(
           name,
           age,
           email,
+          password_hash,
           current_position,
           location,
           visa_status,
@@ -82,14 +84,15 @@ export async function saveCandidate(
           previous_positions,
           education
         ) VALUES (
-          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16
         )
         RETURNING *
       `,
       [
         input.name,
-        input.age ?? null,
+        input.age,
         input.email,
+        input.password_hash,
         normalizeCurrentPosition(input.current_position),
         input.location ?? null,
         input.visa_status ?? null,
@@ -120,6 +123,8 @@ export async function saveCandidate(
 
   if (hasField('name')) pushUpdate('name', input.name ?? null);
   if (hasField('age')) pushUpdate('age', input.age ?? null);
+  if (hasField('password_hash'))
+    pushUpdate('password_hash', input.password_hash ?? null);
   if (hasField('current_position'))
     pushUpdate('current_position', normalizeCurrentPosition(input.current_position));
   if (hasField('location')) pushUpdate('location', input.location ?? null);

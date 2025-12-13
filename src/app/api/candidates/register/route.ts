@@ -9,9 +9,16 @@ export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as CandidateInput;
 
-    if (!payload?.name || !payload?.email) {
+    if (
+      !payload?.name ||
+      !payload?.email ||
+      typeof payload.age !== 'number' ||
+      Number.isNaN(payload.age) ||
+      payload.age < 16 ||
+      !payload.password_hash
+    ) {
       return NextResponse.json(
-        { error: 'Name and email are required.' },
+        { error: 'Name, email, age (>=16), and password_hash are required.' },
         { status: 400 },
       );
     }
@@ -26,9 +33,13 @@ export async function POST(request: Request) {
       console.error('Embedding refresh failed', embeddingError);
     }
 
+    const { password_hash, ...safeCandidate } = candidate as typeof candidate & {
+      password_hash?: string;
+    };
+
     return NextResponse.json(
       {
-        data: candidate,
+        data: safeCandidate,
         embeddingUpdated,
       },
       { status: 201 },
