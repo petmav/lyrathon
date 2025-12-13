@@ -100,7 +100,8 @@ export default function HomePage(): JSX.Element {
           <div className={styles.landingInner}>
             <div>
               <h1 id="landing-title" className={styles.landingTitle}>
-                  applicants ↔ recruiters, without the noise. 
+                  applicants ↔ recruiters 
+                  <h1 style={{ color: "#7c3aed" }}> without the noise. </h1>
               </h1>
               <p className={styles.landingSubtitle}>
                 where AI and talent meet.
