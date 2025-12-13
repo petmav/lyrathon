@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { Response } from 'openai/resources/responses/responses';
 import type { CandidateFilters } from '@/lib/candidate-search';
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
@@ -70,7 +71,6 @@ export async function extractFiltersFromQuery(
           schema: schemaDefinition,
         },
       },
-      temperature: 0.1,
     });
 
     const jsonText = extractTextOutput(response) ?? '{}';
@@ -85,7 +85,7 @@ export async function extractFiltersFromQuery(
   }
 }
 
-function extractTextOutput(response: OpenAI.Beta.Responses.Response) {
+function extractTextOutput(response: Response) {
   const texts: string[] = [];
   for (const item of response.output ?? []) {
     if (item.type === 'message') {
@@ -94,8 +94,6 @@ function extractTextOutput(response: OpenAI.Beta.Responses.Response) {
           texts.push(content.text);
         }
       }
-    } else if (item.type === 'output_text' && item.text) {
-      texts.push(item.text);
     }
   }
   return texts.join('\n');

@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { pool } from '@/lib/db';
 import { generateEmbedding, getEmbeddingModel } from '@/lib/embeddings';
 import { vectorToSql } from '@/lib/vector';
+import type { CandidateInputPayload } from '@/lib/schemas';
 
 export type PreviousPosition = {
   title: string;
@@ -16,24 +17,7 @@ export type EducationEntry = {
   graduation_year?: number;
 };
 
-export type CandidateInput = {
-  name: string;
-  email: string;
-  age: number;
-  password_hash: string;
-  current_position?: string;
-  location?: string;
-  visa_status?: string;
-  experience_years?: number;
-  salary_expectation?: number;
-  availability_date?: string;
-  skills_text?: string;
-  awards_text?: string;
-  certifications_text?: string;
-  projects_text?: string;
-  previous_positions?: PreviousPosition[];
-  education?: EducationEntry[];
-};
+export type CandidateInput = CandidateInputPayload;
 
 export type CandidateRecord = CandidateInput & {
   candidate_id: string;

@@ -5,6 +5,7 @@ REM Resolve paths
 set "SCRIPT_DIR=%~dp0"
 for %%I in ("%SCRIPT_DIR%..") do set "PROJECT_ROOT=%%~fI"
 set "SEED_FILE=%PROJECT_ROOT%\db\seeds\seed.sql"
+set "EXTRA_SEED_FILE=%PROJECT_ROOT%\db\seeds\candidates_small.sql"
 
 REM Defaults (match sh scripts)
 if not defined POSTGRES_SERVICE set "POSTGRES_SERVICE=postgres"
@@ -24,11 +25,19 @@ if not exist "%SEED_FILE%" (
   exit /b 1
 )
 
+if not exist "%EXTRA_SEED_FILE%" (
+  echo Supplemental seed file not found at %EXTRA_SEED_FILE%
+  exit /b 1
+)
+
 call :ensure_postgres_ready
 if errorlevel 1 exit /b 1
 
-echo Seeding data from %SEED_FILE%
-docker compose exec -T "%POSTGRES_SERVICE%" psql -v ON_ERROR_STOP=1 -U "%POSTGRES_USER%" -d "%POSTGRES_DB%" < "%SEED_FILE%"
+echo Seeding data from %SEED_FILE% and %EXTRA_SEED_FILE%
+(
+  type "%SEED_FILE%"
+  type "%EXTRA_SEED_FILE%"
+) | docker compose exec -T "%POSTGRES_SERVICE%" psql -v ON_ERROR_STOP=1 -U "%POSTGRES_USER%" -d "%POSTGRES_DB%"
 if errorlevel 1 exit /b 1
 
 exit /b 0

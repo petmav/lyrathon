@@ -5,6 +5,7 @@ set -eu
 SCRIPT_PATH="$(cd -- "$(dirname -- "$0")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/.." && pwd)"
 SEED_FILE="${PROJECT_ROOT}/db/seeds/seed.sql"
+EXTRA_SEED_FILE="${PROJECT_ROOT}/db/seeds/candidates_small.sql"
 POSTGRES_SERVICE="${POSTGRES_SERVICE:-postgres}"
 POSTGRES_USER="${POSTGRES_USER:-lyrathon}"
 POSTGRES_DB="${POSTGRES_DB:-lyrathon}"
@@ -16,6 +17,11 @@ fi
 
 if [ ! -f "${SEED_FILE}" ]; then
   echo "Seed file not found at ${SEED_FILE}"
+  exit 1
+fi
+
+if [ ! -f "${EXTRA_SEED_FILE}" ]; then
+  echo "Supplemental candidate seed file not found at ${EXTRA_SEED_FILE}"
   exit 1
 fi
 
@@ -39,8 +45,8 @@ ensure_container_ready() {
 
 ensure_container_ready
 
-echo "Seeding data from ${SEED_FILE}"
-docker compose exec -T "${POSTGRES_SERVICE}" psql \
+echo "Seeding data from ${SEED_FILE} and ${EXTRA_SEED_FILE}"
+cat "${SEED_FILE}" "${EXTRA_SEED_FILE}" | docker compose exec -T "${POSTGRES_SERVICE}" psql \
   -v ON_ERROR_STOP=1 \
   -U "${POSTGRES_USER}" \
-  -d "${POSTGRES_DB}" < "${SEED_FILE}"
+  -d "${POSTGRES_DB}"

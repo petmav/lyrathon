@@ -4,20 +4,27 @@ import { saveCandidate } from '@/lib/candidate-ingest';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, email, password } = body ?? {};
+    const { name, email, age, password_hash, ...rest } = body ?? {};
 
-    if (!name || !email) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    if (!name || !email || typeof age !== 'number' || !password_hash) {
+      return NextResponse.json(
+        { error: 'Name, email, age, and password_hash are required.' },
+        { status: 400 },
+      );
     }
 
-    // Use candidate table to create or update a candidate profile. Password is ignored.
-    const candidate = await saveCandidate({ name, email });
+    const candidate = await saveCandidate({
+      name,
+      email,
+      age,
+      password_hash,
+      ...rest,
+    });
     return NextResponse.json(candidate, { status: 201 });
   } catch (e: any) {
-    console.error("register error", e);
-    return NextResponse.json({ error: e?.message ?? "unknown" }, { status: 500 });
+    console.error('register error', e);
+    return NextResponse.json({ error: e?.message ?? 'unknown' }, { status: 500 });
   }
 }
-
 
 
