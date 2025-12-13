@@ -73,7 +73,8 @@ export default function HomePage(): JSX.Element {
         <div className={styles.container}>
           <div className={styles.headerRow}>
             <a className={styles.brand} href="/" aria-label="Go to homepage">
-              Linkdr
+              <span className={styles.logoMark}>LD</span>
+              <span>Linkdr</span>
             </a>
 
             <nav className={styles.nav} aria-label="Primary">
@@ -100,9 +101,13 @@ export default function HomePage(): JSX.Element {
           <div className={styles.landingInner}>
             <div>
               <h1 id="landing-title" className={styles.landingTitle}>
-                  applicants ↔ recruiters {" "}
-                   <span className={styles.accent}>without the noise.</span>
+                {/*applicants ↔ recruiters*/}
+                We power connections
               </h1>
+              <h1 id="landing-title" className={styles.landingTitle}>
+                cut the noise, simply <span className={styles.accent}> linkdr</span>.
+              </h1>
+
               <p className={styles.landingSubtitle}>
                 where AI and talent meet.
               </p>
@@ -131,7 +136,7 @@ export default function HomePage(): JSX.Element {
           </div>
         </section>
 
-        
+
 
         {/* 2) Toggle AFTER the shared block */}
         <section className={styles.toggleSection} aria-label="Choose view">
