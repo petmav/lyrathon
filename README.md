@@ -71,9 +71,18 @@ scripts\setup.bat
 
 After it finishes, edit `.env` with your own secrets and start the dev server with `npm run dev`.
 
+Need to reset everything? Use the reset helper to bring the container down (dropping volumes) and re-run the full setup:
+
+```bash
+./scripts/db-reset.sh
+```
+```powershell
+scripts\db-reset.bat
+```
+
 ## API
 
-Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL` / `OPENAI_EMBEDDING_MODEL`) in `.env` to enable LLM-powered query parsing and embeddings. The default embedding model is `text-embedding-3-small` (1536 dimensions) to stay within pgvector’s 2000-dimension index limit. Key endpoints:
+Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL` / `OPENAI_EMBEDDING_MODEL` / `OPENAI_SHORTLIST_MODEL`) in `.env` to enable LLM-powered query parsing, semantic retrieval, and final shortlisting. The default embedding model is `text-embedding-3-small` (1536 dimensions) to stay within pgvector’s 2000-dimension index limit. Key endpoints:
 
 ### `/api/candidates`
 
@@ -109,6 +118,21 @@ curl -X POST http://localhost:3000/api/query \
 ```
 
 Response includes the inferred filters plus the shortlisted candidates. If `OPENAI_API_KEY` is not configured, the endpoint falls back to keyword-only matching.
+
+### `/api/query/shortlist`
+
+Complete recruiter flow: parse intent → apply filters → retrieve semantic matches → generate an LLM-powered shortlist with recommendations.
+
+```bash
+curl -X POST http://localhost:3000/api/query/shortlist \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Looking for a staff-level backend engineer in Toronto with GraphQL experience, TN visa ready.",
+    "limit": 5
+  }'
+```
+
+The response contains the structured shortlist (candidate IDs, summaries, recommended actions, confidence) plus the filters applied. When `OPENAI_API_KEY` is not set, the endpoint returns the raw candidate matches with placeholder metadata.
 
 ### `/api/candidates/register`
 
