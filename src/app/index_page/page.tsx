@@ -100,24 +100,13 @@ export default function HomePage(): JSX.Element {
           <div className={styles.landingInner}>
             <div>
               <h1 id="landing-title" className={styles.landingTitle}>
-                  applicants ↔ recruiters 
-                  <h1 style={{ color: "#7c3aed" }}> without the noise. </h1>
+                  applicants ↔ recruiters {" "}
+                   <span className={styles.accent}>without the noise.</span>
               </h1>
               <p className={styles.landingSubtitle}>
                 where AI and talent meet.
               </p>
 
-              <div className={styles.landingCtas}>
-                <a className={styles.button} href="/signup">Create an account</a>
-                <a className={styles.ghostBtnWide} href="/jobs">Browse jobs</a>
-              </div>
-
-              <div className={styles.pills} aria-label="Highlights">
-                <span className={styles.pill}>One profile</span>
-                <span className={styles.pill}>Fast apply</span>
-                <span className={styles.pill}>Pipeline tracking</span>
-                <span className={styles.pill}>Verified companies</span>
-              </div>
             </div>
 
             <aside className={styles.landingCard} aria-label="At a glance">
@@ -135,7 +124,14 @@ export default function HomePage(): JSX.Element {
               </div>
             </aside>
           </div>
+          <div className={styles.pills}>
+            <span className={styles.pill}>One profile </span>
+            <span className={styles.pill}>Fast apply</span>
+            <span className={styles.pill}>Verified companies</span>
+          </div>
         </section>
+
+        
 
         {/* 2) Toggle AFTER the shared block */}
         <section className={styles.toggleSection} aria-label="Choose view">

@@ -13,11 +13,11 @@
 }
 
 .header {
-  position: sticky;
+  position: relative;
   top: 0;
   z-index: 10;
-  backdrop-filter: blur(10px);
-  background: rgba(11, 12, 16, 0.75);
+  backdrop-filter: blur(3px);
+  background: rgba(101, 134, 255, 0.792);
   border-bottom: 1px solid var(--border);
 }
 
@@ -58,7 +58,7 @@
 
 .navLinkStrong {
   color: var(--text);
-  background: rgba(124, 58, 237, 0.18);
+  background: rgba(98, 119, 255, 0.18);
   border: 1px solid rgba(124, 58, 237, 0.35);
 }
 
@@ -152,18 +152,24 @@
 }
 
 .pills {
-  display: flex;
+  display: grid;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 14px;
+  margin-top: 16px;
+    justify-content: center;
 }
 
 .pill {
-  border: 1px solid var(--border);
-  color: var(--muted);
+  display: grid;
+  align-items: center;
+  padding: 10px 15px;
   border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 0.85rem;
+  border: 3px solid rgb(121, 11, 255);
+  background: rgba(142, 176, 255, 0.54);
+  color: rgb(121, 11, 255);
+  font-weight: 800;
+  font-size: 1.5rem;
+
 }
 
 .sideCard {
@@ -449,22 +455,27 @@
 
 .landing {
   margin-top: 12px;
+  
 }
 
 .landingInner {
   display: grid;
-  gap: 16px;
-  grid-template-columns: 1.6fr 0.1fr;
+  gap: 0.8px;
+  grid-template-columns: 1.6fr 0.5fr;
   align-items: start;
+  min-height: 350px;
+  margin-top: 200px;
 }
 
 .landingTitle {
   font-size: 4rem;
-  margin: 0 0 3px;
+  margin: 0 0 20px;
 }
 
 .landingSubtitle {
-  margin: 0 0 18px;
+  font-size: 1.6rem;
+  margin-top: 50px;
+  margin: 0 0 50px;
   color: var(--muted);
   max-width: 680px;
 }
@@ -483,20 +494,21 @@
   padding: 10px;
   box-shadow: 0 9px 20px rgba(0,0,0,0.25);
   display: grid;
-  gap: 10px;
-  max-width: 260px;
+  gap: 9px;
   justify-self: end;
+  width: min(500px, 100%);
+  max-width: none;
 }
 
 .kpi {
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 12px;
+  padding: 3px;
   background: rgba(255,255,255,0.04);
 }
 
 .kpiNum {
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   font-weight: 900;
 }
 
@@ -514,9 +526,13 @@
   gap: 12px;
   flex-wrap: wrap;
 }
+.accent {
+  color: #7c3aed;
+}
 
 @media (max-width: 980px) {
   .landingInner {
     grid-template-columns: 1fr;
   }
 }
+
