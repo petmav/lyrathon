@@ -19,10 +19,25 @@ if [ ! -f "${SEED_FILE}" ]; then
   exit 1
 fi
 
-if ! docker compose ps "${POSTGRES_SERVICE}" >/dev/null 2>&1; then
-  echo "PostgreSQL container \"${POSTGRES_SERVICE}\" is not running. Start it with: docker compose up -d ${POSTGRES_SERVICE}"
-  exit 1
-fi
+ensure_container_ready() {
+  echo "Starting PostgreSQL container (${POSTGRES_SERVICE}) if needed..."
+  docker compose up -d "${POSTGRES_SERVICE}"
+
+  echo "Waiting for PostgreSQL to accept connections..."
+  attempts=30
+  until docker compose exec -T "${POSTGRES_SERVICE}" pg_isready \
+    -U "${POSTGRES_USER}" \
+    -d "${POSTGRES_DB}" >/dev/null 2>&1; do
+    attempts=$((attempts - 1))
+    if [ "${attempts}" -le 0 ]; then
+      echo "PostgreSQL container did not become ready in time."
+      exit 1
+    fi
+    sleep 2
+  done
+}
+
+ensure_container_ready
 
 echo "Seeding data from ${SEED_FILE}"
 docker compose exec -T "${POSTGRES_SERVICE}" psql \

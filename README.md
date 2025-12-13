@@ -34,9 +34,13 @@ PostgreSQL powers the candidate/recruiter data model. To run it locally:
    ```bash
    docker compose up -d postgres
    ```
+   _Tip: the helper scripts below will automatically start (or install) the container and wait for readiness if you skip this step._
 3. Apply the schema (run after the container is healthy):
    ```bash
    ./scripts/db-migrate.sh
+   ```
+   ```powershell
+   scripts\db-migrate.bat
    ```
 
 `DATABASE_URL` in `.env` follows the standard `postgresql://user:password@host:port/db` format and can be reused by ORMs or Prisma later. When you need a clean slate, stop services with `docker compose down` (add `-v` to drop volumes).
@@ -48,8 +52,24 @@ Seed the database with a few candidates, recruiters, and documents:
 ```bash
 ./scripts/db-seed.sh
 ```
+```powershell
+scripts\db-seed.bat
+```
 
-This loads `db/seeds/seed.sql`, which you can extend with additional demo records as needed.
+These helpers start the PostgreSQL container if needed, wait for it to accept connections, and then stream `db/seeds/seed.sql`, which you can extend with additional demo records as needed.
+
+### One-command setup
+
+Want everything configured automatically? Run the setup helper and it will install Node dependencies, copy `.env` (if missing), boot the pgvector container, run migrations, and load the sample data:
+
+```bash
+./scripts/setup.sh
+```
+```powershell
+scripts\setup.bat
+```
+
+After it finishes, edit `.env` with your own secrets and start the dev server with `npm run dev`.
 
 ## API
 
