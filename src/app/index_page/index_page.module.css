@@ -10,6 +10,7 @@
   max-width: 1040px;
   margin: 0 auto;
   padding: 24px;
+  
 }
 
 .header {
@@ -105,6 +106,7 @@
 
 .hero {
   margin-top: 12px;
+  
 }
 
 .heroInner {
@@ -169,24 +171,32 @@
 }
 
 .pills {
-  display: grid;
+  display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 16px;
-    justify-content: center;
+  justify-content: center; 
+  align-items: center;
+  margin-top: 24px;
+  margin-bottom: 24px;
 }
 
 .pill {
-  display: grid;
+  display: inline-flex;
   align-items: center;
-  padding: 10px 15px;
+  padding: 8px 12px;
   border-radius: 999px;
-  border: 3px solid rgb(121, 11, 255);
-  background: rgba(142, 176, 255, 0.54);
-  color: rgb(121, 11, 255);
-  font-weight: 800;
-  font-size: 1.5rem;
 
+  background: rgba(242, 255, 62, 0.16);
+  border: 1px solid rgba(255, 228, 27, 0.35);
+
+  color: var(--text);
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: 0.1px;
+
+}
+.pill:hover {
+  filter: brightness(1.05);
 }
 
 .sideCard {
@@ -478,7 +488,7 @@
 .landingInner {
   display: grid;
   gap: 0.8px;
-  grid-template-columns: 1.6fr 0.5fr;
+  grid-template-columns: 1.1fr 0.5fr;
   align-items: start;
   min-height: 350px;
   margin-top: 200px;
@@ -486,7 +496,8 @@
 
 .landingTitle {
   font-size: 3.5rem;
-  margin: 0 0 20px;
+  margin: 0 0 15px;
+  color: white;
 }
 
 .landingSubtitle {
@@ -495,6 +506,7 @@
   margin: 0 0 50px;
   color: var(--muted);
   max-width: 680px;
+  color: white;
 }
 
 .landingCtas {
@@ -520,8 +532,9 @@
 .kpi {
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 3px;
-  background: rgba(255,255,255,0.04);
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.392);
+
 }
 
 .kpiNum {
@@ -553,3 +566,32 @@
   }
 }
 
+.heroBg {
+  width: 100%;
+  min-height: 60vh; /* adjust */
+
+  background-image:
+    linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)),
+    url("/bg.jpg");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  padding: 48px 0; /* top/bottom spacing */
+}
+.landing {
+  width: 100%;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)),
+    url("/bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 48px 0;
+}
+
+.recruiterCtas {
+  margin-bottom: 30px; 
+  margin-top: 30px; 
+}
