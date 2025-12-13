@@ -24,15 +24,34 @@ if not exist "%SEED_FILE%" (
   exit /b 1
 )
 
-REM Check container is running
-docker compose ps "%POSTGRES_SERVICE%" >nul 2>&1
-if errorlevel 1 (
-  echo PostgreSQL container "%POSTGRES_SERVICE%" is not running. Start it with: docker compose up -d %POSTGRES_SERVICE%
-  exit /b 1
-)
+call :ensure_postgres_ready
+if errorlevel 1 exit /b 1
 
 echo Seeding data from %SEED_FILE%
 docker compose exec -T "%POSTGRES_SERVICE%" psql -v ON_ERROR_STOP=1 -U "%POSTGRES_USER%" -d "%POSTGRES_DB%" < "%SEED_FILE%"
 if errorlevel 1 exit /b 1
 
 exit /b 0
+
+:ensure_postgres_ready
+echo Starting PostgreSQL container (%POSTGRES_SERVICE%) if needed...
+docker compose up -d "%POSTGRES_SERVICE%"
+if errorlevel 1 (
+  echo Failed to start PostgreSQL container.
+  exit /b 1
+)
+
+set /a attempts=30
+:wait_loop
+docker compose exec -T "%POSTGRES_SERVICE%" pg_isready -U "%POSTGRES_USER%" -d "%POSTGRES_DB%" >nul 2>&1
+if not errorlevel 1 (
+  echo PostgreSQL is ready.
+  exit /b 0
+)
+set /a attempts-=1
+if !attempts! LEQ 0 (
+  echo PostgreSQL container did not become ready in time.
+  exit /b 1
+)
+timeout /t 2 >nul
+goto :wait_loop
