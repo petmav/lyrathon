@@ -4,24 +4,23 @@ import {
   refreshCandidateEmbedding,
   type CandidateInput,
 } from '@/lib/candidate-ingest';
+import {
+  candidateInputSchema,
+  candidateRegistrationResponseSchema,
+} from '@/lib/schemas';
+import {
+  enforceResponseShape,
+  isRequestValidationError,
+  isResponseValidationError,
+  parseRequestPayload,
+} from '@/lib/validation';
 
 export async function POST(request: Request) {
   try {
-    const payload = (await request.json()) as CandidateInput;
-
-    if (
-      !payload?.name ||
-      !payload?.email ||
-      typeof payload.age !== 'number' ||
-      Number.isNaN(payload.age) ||
-      payload.age < 16 ||
-      !payload.password_hash
-    ) {
-      return NextResponse.json(
-        { error: 'Name, email, age (>=16), and password_hash are required.' },
-        { status: 400 },
-      );
-    }
+    const payload = parseRequestPayload(
+      candidateInputSchema,
+      await request.json(),
+    ) as CandidateInput;
 
     const candidate = await saveCandidate(payload);
     let embeddingUpdated = false;
@@ -37,18 +36,59 @@ export async function POST(request: Request) {
       password_hash?: string;
     };
 
-    return NextResponse.json(
+    const normalizedCandidate = normalizeCandidateDates(safeCandidate);
+
+    const responseBody = enforceResponseShape(
+      candidateRegistrationResponseSchema,
       {
-        data: safeCandidate,
+        data: normalizedCandidate,
         embeddingUpdated,
       },
-      { status: 201 },
     );
+
+    return NextResponse.json(responseBody, { status: 201 });
   } catch (error) {
+    if (isRequestValidationError(error)) {
+      return NextResponse.json(
+        { error: error.message, details: error.details },
+        { status: 400 },
+      );
+    }
+
+    if (isResponseValidationError(error)) {
+      console.error('Candidate response validation failed', error.details);
+      return NextResponse.json(
+        { error: 'Failed to format candidate response' },
+        { status: 500 },
+      );
+    }
+
     console.error('Candidate registration failed', error);
     return NextResponse.json(
       { error: 'Failed to create candidate' },
       { status: 500 },
     );
   }
+}
+
+type CandidateDateFields = {
+  availability_date?: unknown;
+  profile_created_at?: unknown;
+  profile_updated_at?: unknown;
+};
+
+function normalizeCandidateDates<T extends CandidateDateFields>(candidate: T): T {
+  const normalizeDateField = (value: unknown) => {
+    if (!value) return value;
+    if (typeof value === 'string') return value;
+    if (value instanceof Date) return value.toISOString();
+    return value;
+  };
+
+  return {
+    ...candidate,
+    availability_date: normalizeDateField(candidate.availability_date),
+    profile_created_at: normalizeDateField(candidate.profile_created_at),
+    profile_updated_at: normalizeDateField(candidate.profile_updated_at),
+  };
 }
