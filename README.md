@@ -20,6 +20,100 @@ This project is a production-ready Next.js application that serves as a foundati
 Before you begin, ensure you have the following installed:
 - **Node.js** 18.17 or later
 - **npm** or **yarn** or **pnpm**
+- **Docker** and **Docker Compose** (for the PostgreSQL database)
+
+## Database
+
+PostgreSQL powers the candidate/recruiter data model. To run it locally:
+
+1. Copy the sample environment file and adjust as needed:
+   ```bash
+   cp .env.example .env
+   ```
+2. Start PostgreSQL (includes the pgvector extension):
+   ```bash
+   docker compose up -d postgres
+   ```
+3. Apply the schema (run after the container is healthy):
+   ```bash
+   ./scripts/db-migrate.sh
+   ```
+
+`DATABASE_URL` in `.env` follows the standard `postgresql://user:password@host:port/db` format and can be reused by ORMs or Prisma later. When you need a clean slate, stop services with `docker compose down` (add `-v` to drop volumes).
+
+### Sample data
+
+Seed the database with a few candidates, recruiters, and documents:
+
+```bash
+./scripts/db-seed.sh
+```
+
+This loads `db/seeds/seed.sql`, which you can extend with additional demo records as needed.
+
+## API
+
+Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL` / `OPENAI_EMBEDDING_MODEL`) in `.env` to enable LLM-powered query parsing and embeddings. The default embedding model is `text-embedding-3-small` (1536 dimensions) to stay within pgvector’s 2000-dimension index limit. Key endpoints:
+
+### `/api/candidates`
+
+Filtered candidate search over PostgreSQL. `searchTerm` is required (used for keywords), while every other field is optional and treated as a preference rather than a hard requirement. Send a POST request with JSON filters:
+
+```bash
+curl -X POST http://localhost:3000/api/candidates \
+  -H "Content-Type: application/json" \
+  -d '{
+    "searchTerm": "frontend",
+    "location": "canada",
+    "visaRequired": true,
+    "minExperience": 5,
+    "maxSalary": 180000,
+    "availabilityBefore": "2025-03-01",
+    "limit": 20
+  }'
+```
+
+The route applies the keyword match as the only hard filter, then boosts candidates who align with the optional hints (location aliases, visa readiness, experience, compensation, availability) before returning results.
+
+### `/api/query`
+
+Turns natural-language recruiter prompts into structured filters via OpenAI before executing the search:
+
+```bash
+curl -X POST http://localhost:3000/api/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Need senior React engineer in Canada, must be eligible for TN visa, salary under 170k",
+    "limit": 10
+  }'
+```
+
+Response includes the inferred filters plus the shortlisted candidates. If `OPENAI_API_KEY` is not configured, the endpoint falls back to keyword-only matching.
+
+### `/api/candidates/register`
+
+Intake endpoint for candidate submissions. POST candidate details (name, email, skills, etc.) to persist the record and trigger embedding generation immediately:
+
+```bash
+curl -X POST http://localhost:3000/api/candidates/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Kai Patel",
+    "email": "kai@example.com",
+    "current_position": "Senior Backend Engineer",
+    "location": "Toronto, CA",
+    "skills_text": "Go, AWS, PostgreSQL, GraphQL, distributed systems",
+    "projects_text": "Lead payments platform rewrite for 5M users."
+  }'
+```
+
+Successful ingestion will create/update embeddings in `candidate_embeddings`, keeping the vector index synchronized with SQL changes.
+
+## Retrieval Flow
+
+1. **Candidate intake** (`/api/candidates/register`): form submissions hit this endpoint, which stores the row in PostgreSQL and generates embeddings through OpenAI into the `candidate_embeddings` table (powered by `pgvector`).
+2. **Recruiter query** (`/api/query`): natural-language prompts are parsed by an LLM into structured filters, run against SQL for deterministic requirements (visa, availability, etc.), and re-ranked semantically via vector similarity before returning a shortlist.
+3. **Future steps**: layer on hybrid BM25+vector search, re-ranking, and shortlist generation as described in `RAG.md`.
 
 ## Installation
 
