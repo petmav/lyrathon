@@ -36,36 +36,84 @@ const testimonials: Testimonial[] = [
 
 const applicantTestimonials: Testimonial[] = [
   {
-    quote: "I applied once and stopped writing cover letters. The shortlist matches my stack.",
-    name: "Hannah Lee",
+    quote: "I applied once and stopped using anything else. Haven't touched other platforms since.",
+    name: "Joanna Chen",
     title: "Senior Frontend Engineer, Terra",
-    image: "/hannah.png",
+    image: "/joanna.png",
   },
   {
-    quote: "The rationale shows why I’m a fit. I can prep faster and steer the conversation.",
-    name: "Marco Ruiz",
+    quote: "Signed up and got an e-mail from a recruiter a few hours later.",
+    name: "Jeremiah Steinson",
     title: "Full Stack Engineer, Nordill",
-    image: "/marco.png",
+    image: "/jeremiah.png",
   },
   {
     quote: "Visa and location filters saved me from irrelevant outreach.",
-    name: "Priya Menon",
+    name: "Aisha Khan",
     title: "Data Engineer, Scielbank",
-    image: "/priya.png",
+    image: "/aisha.png",
   },
 ];
 
 export default function HomePage() {
   const [activeSection, setActiveSection] = useState("hero");
+  const [heroSeen, setHeroSeen] = useState(false);
+  const [optionsSeen, setOptionsSeen] = useState(false);
+  const [testimonialsSeen, setTestimonialsSeen] = useState(false);
   const mainRef = useRef<HTMLElement | null>(null);
   const sectionOrder = ["hero", "options", "testimonials"] as const;
   const showHeader = activeSection === "hero";
   const showFooter = activeSection === "testimonials";
+  useEffect(() => {
+    const counters = Array.from(
+      document.querySelectorAll<HTMLElement>(".kpi-value[data-target]")
+    );
+    const rafIds: number[] = [];
+    const intervalIds: number[] = [];
+
+    const easeOutQuad = (t: number) => 1 - (1 - t) * (1 - t);
+
+    counters.forEach((el, idx) => {
+      const target = Number(el.dataset.target ?? 0);
+      const suffix = el.dataset.suffix ?? "";
+      const loop = el.dataset.loop !== "false";
+      const isApplicants = target > 1000; // heuristic for applicants
+      let current = 0;
+      const duration = isApplicants ? 3200 : 5200 + idx * 400;
+      const start = performance.now();
+
+      const animate = (now: number) => {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = easeOutQuad(progress);
+        current = Math.min(target, Math.floor(eased * target));
+        el.textContent = `${current}${suffix}`;
+        if (progress < 1) {
+          rafIds.push(requestAnimationFrame(animate));
+        } else {
+          el.textContent = `${target}${suffix}`;
+          if (loop) {
+            const jitter = isApplicants
+              ? 1800 + Math.random() * 1400
+              : 7000 + Math.random() * 3000;
+            const interval = window.setInterval(() => {
+              current += 1;
+              el.textContent = `${current}${suffix}`;
+            }, jitter);
+            intervalIds.push(interval);
+          }
+        }
+      };
+
+      rafIds.push(requestAnimationFrame(animate));
+    });
+
+    return () => {
+      rafIds.forEach((id) => cancelAnimationFrame(id));
+      intervalIds.forEach((id) => clearInterval(id));
+    };
+  }, []);
 
   useEffect(() => {
-    const root = mainRef.current;
-    if (!root) return;
-
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -74,7 +122,7 @@ export default function HomePage() {
           }
         });
       },
-      { root, threshold: 0.6 }
+      { root: mainRef.current, threshold: 0.6 }
     );
 
     sectionOrder.forEach((id) => {
@@ -84,6 +132,27 @@ export default function HomePage() {
 
     return () => observer.disconnect();
   }, [sectionOrder]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          if (entry.target.id === "hero") setHeroSeen(true);
+          if (entry.target.id === "options") setOptionsSeen(true);
+          if (entry.target.id === "testimonials") setTestimonialsSeen(true);
+        });
+      },
+      { threshold: 0.35 }
+    );
+
+    ["hero", "options", "testimonials"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="page">
@@ -99,10 +168,10 @@ export default function HomePage() {
             <Link className="nav-link" href="#hero">
               Home
             </Link>
-            <Link className="nav-link" href="#options">
+            <Link className="nav-link" href="/register">
               Applicants
             </Link>
-            <Link className="nav-link" href="#options">
+            <Link className="nav-link" href="/register/recruiter">
               Recruiters
             </Link>
             <Link className="nav-link" href="#testimonials">
@@ -115,34 +184,34 @@ export default function HomePage() {
       <main className="page-main" ref={mainRef}>
         <section id="hero" className="panel hero">
           <div className="container hero-content">
-            <p className="eyebrow">Retrieval-augmented hiring</p>
-            <h1 className="hero-title">
+            <p className={`eyebrow reveal ${heroSeen ? "show reveal-delay-0" : ""}`}>Retrieval-augmented hiring</p>
+            <h1 className={`hero-title reveal ${heroSeen ? "show reveal-delay-1" : ""}`}>
               Match talent and teams with an AI co-pilot that explains every decision.
             </h1>
-            <p className="hero-subtitle">
+            <p className={`hero-subtitle reveal ${heroSeen ? "show reveal-delay-2" : ""}`}>
               One submission for candidates. One natural-language query for recruiters.
               A transparent shortlist powered by SQL filters, vector search, and LLM reasoning.
             </p>
-            <div className="hero-actions">
-              <Link className="btn primary" href="/register">
+            <div className={`hero-actions reveal ${heroSeen ? "show reveal-delay-3" : ""}`}>
+              <Link className="btn primary" href="#options">
                 Get started
               </Link>
-              <Link className="btn ghost" href="#options">
-                See how it works
+              <Link className="btn ghost" href="#testimonials">
+                Testimonials
               </Link>
             </div>
-            <div className="hero-kpis" aria-label="Highlights">
+            <div className={`hero-kpis reveal ${heroSeen ? "show reveal-delay-4" : ""}`} aria-label="Highlights">
               <div className="kpi-card">
-                <span className="kpi-value">2 min</span>
+                <span className="kpi-value" data-target="2" data-suffix="m" data-loop="false">0m</span>
                 <span className="kpi-label">Avg apply time</span>
               </div>
               <div className="kpi-card">
-                <span className="kpi-value">300+</span>
+                <span className="kpi-value" data-target="342">0</span>
                 <span className="kpi-label">Hiring teams</span>
               </div>
               <div className="kpi-card">
-                <span className="kpi-value">200+</span>
-                <span className="kpi-label">Companies hiring</span>
+                <span className="kpi-value" data-target="2641">0</span>
+                <span className="kpi-label">Active applicants</span>
               </div>
             </div>
           </div>
@@ -150,7 +219,7 @@ export default function HomePage() {
 
         <section id="options" className="panel options">
           <div className="container split">
-            <div className="panel-header">
+            <div className={`panel-header reveal ${optionsSeen ? "show reveal-delay-0" : ""}`}>
               <p className="eyebrow">Choose your path</p>
               <h2 className="section-title">Built for applicants and recruiters</h2>
               <p className="section-subtitle">
@@ -158,7 +227,7 @@ export default function HomePage() {
                 with the same RAG pipeline.
               </p>
             </div>
-            <div className="card-grid">
+            <div className={`card-grid reveal ${optionsSeen ? "show reveal-delay-1" : ""}`}>
               <article className="glass-card">
                 <p className="badge">Applicants</p>
                 <h3>Create your profile</h3>
@@ -175,8 +244,8 @@ export default function HomePage() {
                   <Link className="btn primary" href="/register">
                     Submit profile
                   </Link>
-                  <Link className="btn text" href="/">
-                    Check status →
+                  <Link className="btn text" href="/login">
+                    Check profile →
                   </Link>
                 </div>
               </article>
@@ -195,10 +264,10 @@ export default function HomePage() {
                 </ul>
                 <div className="card-actions">
                   <Link className="btn primary" href="/register/recruiter">
-                    Run a query
+                    Find talent
                   </Link>
-                  <Link className="btn text" href="/api/query/shortlist">
-                    API docs →
+                  <Link className="btn text" href="/recruiter_query_page">
+                    Run a query →
                   </Link>
                 </div>
               </article>
@@ -208,12 +277,12 @@ export default function HomePage() {
 
         <section id="testimonials" className="panel testimonials">
           <div className="container">
-            <div className="panel-header">
+            <div className={`panel-header reveal ${testimonialsSeen ? "show reveal-delay-0" : ""}`}>
               <p className="eyebrow">Proof in practice</p>
               <h2 className="section-title">Teams that switched to Linkdr</h2>
             </div>
             <div className="testimonial-block">
-              <div className="testimonial-grid">
+              <div className={`testimonial-grid reveal ${testimonialsSeen ? "show reveal-delay-1" : ""}`}>
                 {testimonials.map((t) => (
                   <article key={t.name} className="testimonial-card">
                     <p className="testimonial-quote">“{t.quote}”</p>
@@ -233,11 +302,11 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="panel-header testimonial-spacer">
+            <div className={`panel-header testimonial-spacer reveal ${testimonialsSeen ? "show reveal-delay-2" : ""}`}>
               <h2 className="section-title">Applicants that tried Linkdr</h2>
             </div>
             <div className="testimonial-block">
-              <div className="testimonial-grid">
+              <div className={`testimonial-grid reveal ${testimonialsSeen ? "show reveal-delay-3" : ""}`}>
                 {applicantTestimonials.map((t) => (
                   <article key={`${t.name}-applicant`} className="testimonial-card">
                     <p className="testimonial-quote">“{t.quote}”</p>
