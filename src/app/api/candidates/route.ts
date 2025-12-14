@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest} from 'next/server';
 import { searchCandidates, type CandidateFilters } from '@/lib/candidate-search';
 import { logEvent } from '@/lib/logger';
 import {
@@ -11,6 +11,7 @@ import {
   isResponseValidationError,
   parseRequestPayload,
 } from '@/lib/validation';
+import { db } from '@/lib/db'
 
 export async function POST(request: Request) {
   try {
@@ -54,4 +55,43 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+
+export async function GET(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url);
+
+        const payload = {
+            candidate_id: searchParams.get("candidate_id"),
+        };
+
+        const { candidate_id } = parseRequestPayload(
+            candidateFiltersSchema,
+            payload
+        ) as { candidate_id: string };
+        const result = await db.query(`
+            SELECT
+                name,
+                email,
+                age,
+                password_hash,
+                current_position,
+                location,
+                visa_status,
+                experience_years,
+                salary_expectation,
+                availability_date,
+                skills_text,
+                awards_text,
+                certifications_text,
+                projects_text,
+                previous_positions,
+                education,
+            FROM candidate WHERE candidate_id = $1
+        `, [candidate_id])
+        console.log(result)
+        return NextResponse.json(result);
+    } catch (error) {
+
+    }
 }

@@ -123,18 +123,19 @@ export default function RecruiterQueryPage(): JSX.Element {
         setInput("");
 
         // Replace this block with a real API call later.
-        const matches = simpleMatch(trimmed);
-        const reply =
-            matches.length === 0
-                ? "No matches found in the sample dataset. Try different keywords (skills, city, role)."
-                : `Top matches:\n${matches
-                    .map(
-                        (c, i) =>
-                            `${i + 1}) ${c.name} — ${c.title} • ${c.location}\n   Skills: ${c.skills.join(
-                                ", "
-                            )}\n   Experience: ${c.years} yrs • Availability: ${c.availability}`
-                    )
-                    .join("\n")}\n\nTip: add must-have skills (e.g., “Next.js, tRPC”) to narrow results.`;
+        // const matches = simpleMatch(trimmed);
+        // const reply =
+        //     matches.length === 0
+        //         ? "No matches found in the sample dataset. Try different keywords (skills, city, role)."
+        //         : `Top matches:\n${matches
+        //             .map(
+        //                 (c, i) =>
+        //                     `${i + 1}) ${c.name} — ${c.title} • ${c.location}\n   Skills: ${c.skills.join(
+        //                         ", "
+        //                     )}\n   Experience: ${c.years} yrs • Availability: ${c.availability}`
+        //             )
+        //             .join("\n")}\n\nTip: add must-have skills (e.g., “Next.js, tRPC”) to narrow results.`;
+        
 
         addMessage("assistant", reply);
         scrollToBottom();
@@ -146,7 +147,7 @@ export default function RecruiterQueryPage(): JSX.Element {
                 <div className={styles.headerInner}>
                     <div>
                         <h1 className={styles.title}>Recruiter Query</h1>
-                        <p className={styles.subtitle}>Chat-style search for candidates (demo data).</p>
+                        <p className={styles.subtitle}>Chat-style search for candidate.</p>
                     </div>
                     <a className={styles.back} href="/">
                         ← Home
