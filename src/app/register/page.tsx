@@ -41,6 +41,8 @@ export default function RegisterPage() {
         setLoading(false);
         return;
       }
+      localStorage.setItem("candidate_id", data.data.candidate_id);
+      console.log(data);
 
       // On success, redirect to login
       router.push("/login");

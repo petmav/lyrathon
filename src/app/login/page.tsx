@@ -37,6 +37,7 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
+      console.log(data);
 
       // on success redirect to home (or wherever you want)
       router.push("/");
