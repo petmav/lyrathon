@@ -3,6 +3,10 @@
 import React, { JSX, useMemo, useState } from "react";
 import Link from "next/link";
 import styles from "./index_page.module.css";
+import {
+  Button,
+  CircularProgress,
+} from "@mui/material";
 
 type Role = "applicant" | "recruiter";
 
@@ -231,6 +235,7 @@ function ApplicantHome(): JSX.Element {
 
 
 function RecruiterHome(): JSX.Element {
+  const [loading, setLoading] = useState(false);
   return (
     <>
       {/* Recruiter hero */}
@@ -245,9 +250,18 @@ function RecruiterHome(): JSX.Element {
             </p>
 
             <div className={styles.recruiterCtas}>
-              <a className={styles.button} href="/recruiter/query">
+              {/* <a className={styles.button} href="/recruiter/query">
                 Query candidates
-              </a>
+              </a> */}
+              <Link href={"/register"}>
+                <button
+                type="submit"
+                disabled={loading}
+                className={styles.button}
+                >
+                {loading ? <CircularProgress size={24} /> : "Query candidates"}
+              </button>
+              </Link>
             </div>
 
             <div className={styles.pills} aria-label="Recruiter highlights">
