@@ -96,9 +96,9 @@ export default function RecruiterQueryPage(): JSX.Element {
         },
     ]);
 
-    const listRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
-    const quickPrompts = useMemo(
+  const quickPrompts = useMemo(
         () => [
             "Frontend engineer, Sydney, React + TypeScript, 2+ years",
             "Data analyst, remote AU, SQL + Python",
@@ -113,22 +113,43 @@ export default function RecruiterQueryPage(): JSX.Element {
         });
     }
 
-    function addMessage(role: Msg["role"], text: string) {
-        setMessages((m) => [...m, { id: id(), role, text, ts: Date.now() }]);
-    }
+  function addMessage(role: Msg["role"], text: string) {
+    setMessages((m) => [...m, { id: id(), role, text, ts: Date.now() }]);
+  }
 
-    async function handleSend(text: string) {
-        const res = await fetch("/api/query/shortlist", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: text }),
-        });
+  async function handleSend(text: string) {
+    if (isThinking) return;
+    const trimmed = text.trim();
+    if (!trimmed) return;
 
-        const reply = await res.text();
-        addMessage("assistant", reply);
-        setIsThinking(false);
-        scrollToBottom();
+    addMessage("recruiter", trimmed);
+    setInput("");
+    setIsThinking(true);
+    scrollToBottom();
+
+    try {
+      const res = await fetch("/api/query/shortlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: trimmed, limit: 5 }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Request failed: ${res.status}`);
+      }
+      const reply = await res.text();
+      addMessage("assistant", reply);
+      scrollToBottom();
+    } catch (error) {
+      addMessage(
+        "assistant",
+        "We hit an error while generating a shortlist. Please try again or adjust your query.",
+      );
+      console.error(error);
+    } finally {
+      setIsThinking(false);
     }
+  }
 
     return (
         <div className={styles.page}>
@@ -155,7 +176,13 @@ export default function RecruiterQueryPage(): JSX.Element {
                                 <p className={styles.muted}>Describe the role, skills, location, visa, and salary constraints.</p>
                                 <div className={styles.quickRow} aria-label="Quick prompts">
                                     {quickPrompts.map((p) => (
-                                        <button key={p} className={styles.quick} type="button" onClick={() => handleSend(p)}>
+                                        <button
+                                            key={p}
+                                            className={styles.quick}
+                                            type="button"
+                                            disabled={isThinking}
+                                            onClick={() => handleSend(p)}
+                                        >
                                             {p}
                                         </button>
                                     ))}
@@ -203,7 +230,7 @@ export default function RecruiterQueryPage(): JSX.Element {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
+                            if (e.key === "Enter" && !e.shiftKey && !isThinking) {
                                 e.preventDefault();
                                 handleSend(input);
                             }
@@ -217,7 +244,7 @@ export default function RecruiterQueryPage(): JSX.Element {
                         aria-label="Send query"
                         disabled={isThinking}
                     >
-                        <span className={isThinking ? styles.spinner : ""}>→</span>
+                        {isThinking ? <span className={styles.spinner} aria-hidden="true" /> : "→"}
                     </button>
                 </form>
             </div>

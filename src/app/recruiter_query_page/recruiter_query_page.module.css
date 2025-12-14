@@ -131,6 +131,12 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
+.quick:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .chat {
   height: 420px;
   overflow: auto;
@@ -227,14 +233,14 @@
 }
 
 .sendBtn {
-  min-width: 60px;
+  min-width: 52px;
   border: none;
   border-radius: 999px;
   padding: 0 14px;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #050712;
   font-weight: 900;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -255,6 +261,11 @@
 }
 
 .spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: rgba(255, 255, 255, 0.9);
   display: inline-block;
   animation: spin 0.9s linear infinite;
 }
