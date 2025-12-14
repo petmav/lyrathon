@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
-import db from "@/lib/db";
+import { db } from "@/lib/db";
 
 const dataDir = path.join(process.cwd(), "data");
 const usersFile = path.join(dataDir, "users.json");
