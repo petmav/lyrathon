@@ -250,17 +250,10 @@ function RecruiterHome(): JSX.Element {
             </p>
 
             <div className={styles.recruiterCtas}>
-              {/* <a className={styles.button} href="/recruiter/query">
-                Query candidates
-              </a> */}
               <Link href={"/register"}>
-                <button
-                type="submit"
-                disabled={loading}
-                className={styles.button}
-                >
-                {loading ? <CircularProgress size={24} /> : "Query candidates"}
-              </button>
+                <button type="submit" className={styles.button}>
+                Query candidates
+                </button>
               </Link>
             </div>
 
