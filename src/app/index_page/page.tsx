@@ -3,10 +3,6 @@
 import React, { JSX, useMemo, useState } from "react";
 import Link from "next/link";
 import styles from "./index_page.module.css";
-import {
-  Button,
-  CircularProgress,
-} from "@mui/material";
 
 type Role = "applicant" | "recruiter";
 
