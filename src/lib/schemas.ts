@@ -147,6 +147,8 @@ export const recruiterQueryResponseSchema = z.object({
   data: z.array(candidateSearchResultSchema),
 });
 
+export const SHORTLIST_MAX_RESULTS = 10;
+
 export const shortlistResultSchema = z.object({
   shortlist: z
     .array(
@@ -165,7 +167,7 @@ export const shortlistResultSchema = z.object({
       }),
     )
     .min(0)
-    .max(5),
+    .max(SHORTLIST_MAX_RESULTS),
   overall_summary: nonEmptyString,
 });
 
