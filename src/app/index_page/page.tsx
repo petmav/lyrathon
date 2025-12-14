@@ -1,6 +1,7 @@
 "use client";
 
 import React, { JSX, useMemo, useState } from "react";
+import Link from "next/link";
 import styles from "./index_page.module.css";
 
 type Role = "applicant" | "recruiter";
@@ -72,24 +73,23 @@ export default function HomePage(): JSX.Element {
       <header className={styles.header}>
         <div className={styles.container}>
           <div className={styles.headerRow}>
-            <a className={styles.brand} href="/" aria-label="Go to homepage">
-              <span className={styles.logoMark}>LD</span>
-              <span>Linkdr</span>
-            </a>
+            <Link className={styles.brand} href="/" aria-label="Go to homepage">
+              Linkdr
+            </Link>
 
             <nav className={styles.nav} aria-label="Primary">
-              <a className={styles.navLink} href="/jobs">
+              <Link className={styles.navLink} href="/jobs">
                 Jobs
-              </a>
-              <a className={styles.navLink} href="/applications">
+              </Link>
+              <Link className={styles.navLink} href="/applications">
                 Applications
-              </a>
-              <a className={styles.navLink} href="/companies">
+              </Link>
+              <Link className={styles.navLink} href="/companies">
                 Companies
-              </a>
-              <a className={styles.navLinkStrong} href="/login">
+              </Link>
+              <Link className={styles.navLinkStrong} href="/login">
                 Sign in
-              </a>
+              </Link>
             </nav>
           </div>
         </div>
