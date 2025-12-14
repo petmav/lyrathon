@@ -71,18 +71,18 @@ export default function RegisterPage() {
   const accentGradient = "linear-gradient(135deg, #9a6bff 0%, #4fd1c5 100%)";
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "grid",
-        placeItems: "center",
-        position: "relative",
-        padding: { xs: 3, md: 6 },
-        background:
-          "linear-gradient(180deg, rgba(5, 8, 20, 0.9), rgba(5, 8, 20, 0.96)), url(/bg.jpg) center/cover no-repeat",
-        color: "#e8edf5",
-      }}
-    >
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          position: "relative",
+          padding: { xs: 3, md: 6 },
+          background:
+            "linear-gradient(180deg, rgba(5, 8, 20, 0.9), rgba(5, 8, 20, 0.96)), url(/bg.jpg) center/cover no-repeat",
+          color: "#e8edf5",
+        }}
+      >
       <Box
         sx={{
           width: "min(1100px, 100%)",
@@ -103,6 +103,12 @@ export default function RegisterPage() {
             backdropFilter: "blur(16px)",
             display: "grid",
             gap: 3,
+            opacity: 0,
+            animation: "authFade 0.7s ease forwards 0.05s",
+            "@keyframes authFade": {
+              from: { opacity: 0, transform: "translateY(12px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
+            },
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -187,6 +193,12 @@ export default function RegisterPage() {
             boxShadow: "0 25px 60px rgba(0,0,0,0.45)",
             backdropFilter: "blur(18px)",
             color: "#e8edf5",
+            opacity: 0,
+            animation: "authFade 0.75s ease forwards 0.15s",
+            "@keyframes authFade": {
+              from: { opacity: 0, transform: "translateY(12px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
+            },
           }}
         >
           <Box sx={{ display: "grid", gap: 0.5, mb: 3 }}>
