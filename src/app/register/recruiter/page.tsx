@@ -89,24 +89,36 @@ export default function RecruiterRegisterPage() {
             backdropFilter: "blur(16px)",
             display: "grid",
             gap: 3,
+            opacity: 0,
+            animation: "authFade 0.7s ease forwards 0.05s",
+            "@keyframes authFade": {
+              from: { opacity: 0, transform: "translateY(12px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
+            },
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Box
-              sx={{
-                width: 42,
-                height: 42,
-                borderRadius: 2,
-                background: accentGradient,
-                display: "grid",
-                placeItems: "center",
-                fontWeight: 900,
-                color: "#050712",
-                boxShadow: "0 15px 30px rgba(0,0,0,0.35)",
-              }}
+            <Link
+              href="/"
+              style={{ textDecoration: "none" }}
+              aria-label="Back to landing"
             >
-              L
-            </Box>
+              <Box
+                sx={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 2,
+                  background: accentGradient,
+                  display: "grid",
+                  placeItems: "center",
+                  fontWeight: 900,
+                  color: "#050712",
+                  boxShadow: "0 15px 30px rgba(0,0,0,0.35)",
+                }}
+              >
+                L
+              </Box>
+            </Link>
             <Box>
               <Typography fontWeight={800} letterSpacing={-0.3}>
                 Linkdr
@@ -173,6 +185,12 @@ export default function RecruiterRegisterPage() {
             boxShadow: "0 25px 60px rgba(0,0,0,0.45)",
             backdropFilter: "blur(18px)",
             color: "#e8edf5",
+            opacity: 0,
+            animation: "authFade 0.75s ease forwards 0.15s",
+            "@keyframes authFade": {
+              from: { opacity: 0, transform: "translateY(12px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
+            },
           }}
         >
           <Box sx={{ display: "grid", gap: 0.5, mb: 3 }}>
