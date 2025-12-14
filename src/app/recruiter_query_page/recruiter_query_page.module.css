@@ -85,6 +85,138 @@
   font-size: 0.95rem;
 }
 
+.results {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.resultsHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  margin: 0;
+}
+
+.shortlistGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.shortlistCard {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(16, 16, 16, 0.85);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTitle {
+  margin: 0 0 6px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.confidence {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.confLabel {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.confBar {
+  width: 100%;
+  height: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.confFill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+.confValue {
+  font-weight: 800;
+}
+
+.cardBody {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.cardText {
+  margin: 0;
+  color: var(--text);
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.emailLink {
+  color: var(--accent-2);
+  text-decoration: none;
+}
+
+.metaPill {
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+}
+
+.overall {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(16, 16, 16, 0.85);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+.overallTitle {
+  margin: 0 0 6px;
+}
+
 .back {
   text-decoration: none;
   color: var(--accent-2);
@@ -198,6 +330,13 @@
 
 .thinking {
   opacity: 0.8;
+}
+
+.shortlistBlock {
+  margin: 18px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .composerBar {
