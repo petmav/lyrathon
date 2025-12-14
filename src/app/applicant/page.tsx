@@ -1,27 +1,10 @@
 "use client";
 
 import { JSX, SyntheticEvent, useState, useEffect } from "react";
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Stack,
-  IconButton,
-  Chip,
-  CircularProgress,
-} from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from '@mui/icons-material/Edit';
-import CloseIcon from '@mui/icons-material/Close';
+import { Box, Button, Stack } from "@mui/material";
 import { apiCall } from "@/lib/utils";
 import Link from "next/link";
-import styles from "../recruiter_query_page/recruiter_query_page.module.css";
+import styles from "./applicant.module.css";
 import { useRouter } from "next/navigation";
 
 /* =======================
@@ -87,39 +70,39 @@ function ChipInput({ label, values, setValues, disabled }: ChipInputProps) {
   };
 
   return (
-    <Box>
-      <TextField
-        label={label}
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            addValue();
-          }
-        }}
-        fullWidth
-        variant="filled"
-        disabled={disabled}
-        sx={{
-          '& .MuiFilledInput-root': { background: 'rgba(255,255,255,0.04)', color: 'white' },
-          '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-        }}
-      />
-      <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
-        {values.map((value, index) => (
-          <Chip
-            key={index}
-            label={value}
-            onDelete={() =>
-              setValues(values.filter((_, i) => i !== index))
+    <div>
+      <div className={styles.modalRow}>
+        <div className={styles.modalLabel}>{label}</div>
+        <input
+          className={styles.modalInput}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addValue();
             }
-            sx={{ background: 'rgba(255,255,255,0.06)', color: 'inherit' }}
-            disabled={disabled}
-          />
+          }}
+          disabled={disabled}
+        />
+        <button type="button" className={`${styles.modalBtn} ${styles.ghost}`} onClick={addValue} disabled={disabled}>
+          Add
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+        {values.map((value, index) => (
+          <span key={index} className={styles.tag}>
+            {value}
+            {!disabled && (
+              <button type="button" style={{ marginLeft: 8, background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }} onClick={() => setValues(values.filter((_, i) => i !== index))}>
+                ×
+              </button>
+            )}
+          </span>
         ))}
-      </Stack>
-    </Box>
+      </div>
+    </div>
   );
 }
 
@@ -349,24 +332,28 @@ export default function ApplicantFormPage(): JSX.Element {
   ======================= */
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#07090b", color: 'text.primary' }}>
+    // Use the recruiter page `page` class so the global dark background and text variables apply
+    <Box className={styles.page} sx={{ minHeight: "100vh" }}>
       <header className={styles.header}>
-        <div className={`${styles.container} ${styles.headerInner}`}>
-          <div className={styles.brandRow}>
-            <div className={styles.brand}>
-              <span className={styles.brandMark}>L</span>
-              <span className={styles.brandText}>Linkdr</span>
-              <p className={styles.eyebrow}>Applicant Profile</p>
-            </div>
+          <div className={`${styles.container} ${styles.headerInner}`}>
+            <div className={styles.brandRow}>
+              <div className={styles.brand}>
+                <span className={styles.brandMark}>L</span>
+                <span className={styles.brandText}>Linkdr</span>
+                <p className={styles.eyebrow}>Applicant Profile</p>
+              </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Link className={styles.back} href="/">← Back to home</Link>
-              <Button color="inherit" onClick={handleLogout} sx={{ color: 'white' }}>
-                Logout
-              </Button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Link className={styles.back} href="/">← Back to home</Link>
+              </div>
             </div>
           </div>
-        </div>
+          {/* Logout positioned to the far-right edge of the header */}
+          <div className={styles.logoutWrap}>
+            <Button color="inherit" onClick={handleLogout} sx={{ color: 'white' }}>
+              Logout
+            </Button>
+          </div>
       </header>
 
       <main className={styles.main}>
@@ -382,15 +369,15 @@ export default function ApplicantFormPage(): JSX.Element {
 
               <div style={{ padding: 12 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div><strong>Name:</strong> {name || '—'}</div>
-                  <div><strong>Email:</strong> {email || '—'}</div>
-                  <div><strong>Age:</strong> {age || '—'}</div>
-                  <div><strong>Current Position:</strong> {currentPosition || '—'}</div>
-                  <div><strong>Location:</strong> {location || '—'}</div>
-                  <div><strong>Visa / Work Status:</strong> {visaStatus || '—'}</div>
-                  <div><strong>Years of Experience:</strong> {experienceYears || '—'}</div>
-                  <div><strong>Salary Expectation:</strong> {salaryExpectation || '—'}</div>
-                  <div><strong>Availability Date:</strong> {availabilityDate || '—'}</div>
+                  <div><span className={styles.fieldLabel}>Name:</span> {name || '—'}</div>
+                  <div><span className={styles.fieldLabel}>Email:</span> {email || '—'}</div>
+                  <div><span className={styles.fieldLabel}>Age:</span> {age || '—'}</div>
+                  <div><span className={styles.fieldLabel}>Current Position:</span> {currentPosition || '—'}</div>
+                  <div><span className={styles.fieldLabel}>Location:</span> {location || '—'}</div>
+                  <div><span className={styles.fieldLabel}>Visa / Work Status:</span> {visaStatus || '—'}</div>
+                  <div><span className={styles.fieldLabel}>Years of Experience:</span> {experienceYears || '—'}</div>
+                  <div><span className={styles.fieldLabel}>Salary Expectation:</span> {salaryExpectation || '—'}</div>
+                  <div><span className={styles.fieldLabel}>Availability Date:</span> {availabilityDate || '—'}</div>
                 </div>
 
                 <div style={{ marginTop: 12 }}>
@@ -417,9 +404,9 @@ export default function ApplicantFormPage(): JSX.Element {
                 <div style={{ marginTop: 16 }}>
                   <div className={styles.sectionTitle}>Projects</div>
                   {projects.length ? projects.map((p, i) => (
-                    <div key={i} style={{ marginTop: 8 }}>
-                      <div style={{ fontWeight: 700, color: 'white' }}>{p.title}</div>
-                      <div style={{ color: 'rgba(255,255,255,0.8)' }}>{p.description}</div>
+                    <div key={i} className={styles.profileCard}>
+                      <div className={styles.profileCardTitle}>{p.title || 'Untitled project'}</div>
+                      <div className={styles.profileCardMeta}>{p.description || ''}</div>
                     </div>
                   )) : <div style={{ marginTop: 8 }}>—</div>}
                 </div>
@@ -427,9 +414,9 @@ export default function ApplicantFormPage(): JSX.Element {
                 <div style={{ marginTop: 16 }}>
                   <div className={styles.sectionTitle}>Previous Positions</div>
                   {previousPositions.length ? previousPositions.map((pos, i) => (
-                    <div key={i} style={{ marginTop: 8 }}>
-                      <div style={{ fontWeight: 700, color: 'white' }}>{pos.title} at {pos.org}</div>
-                      <div style={{ color: 'rgba(255,255,255,0.8)' }}>{pos.start_date} — {pos.end_date}</div>
+                    <div key={i} className={styles.profileCard}>
+                      <div className={styles.profileCardTitle}>{pos.title || 'Title'} at {pos.org || 'Organization'}</div>
+                      <div className={styles.profileCardMeta}>{pos.start_date || ''} — {pos.end_date || ''}</div>
                     </div>
                   )) : <div style={{ marginTop: 8 }}>—</div>}
                 </div>
@@ -437,9 +424,9 @@ export default function ApplicantFormPage(): JSX.Element {
                 <div style={{ marginTop: 16 }}>
                   <div className={styles.sectionTitle}>Education</div>
                   {education.length ? education.map((edu, i) => (
-                    <div key={i} style={{ marginTop: 8 }}>
-                      <div style={{ fontWeight: 700, color: 'white' }}>{edu.degree}, {edu.school}</div>
-                      <div style={{ color: 'rgba(255,255,255,0.8)' }}>Graduation: {edu.graduation_year}</div>
+                    <div key={i} className={styles.profileCard}>
+                      <div className={styles.profileCardTitle}>{edu.degree || 'Degree'}, {edu.school || ''}</div>
+                      <div className={styles.profileCardMeta}>Graduation: {edu.graduation_year || '—'}</div>
                     </div>
                   )) : <div style={{ marginTop: 8 }}>—</div>}
                 </div>
@@ -449,100 +436,140 @@ export default function ApplicantFormPage(): JSX.Element {
         </div>
       </main>
 
-        <Dialog open={openEdit} onClose={closeEditModal} fullWidth maxWidth="md" PaperProps={{ sx: { background: 'rgba(16,16,16,0.95)', color: 'white' } }}>
-          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
-            Edit Applicant
-            <IconButton onClick={closeEditModal} size="small" disabled={isSaving}><CloseIcon sx={{ color: 'white' }} /></IconButton>
-          </DialogTitle>
-          <DialogContent>
-            <Box id="applicant-form" component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <TextField label="Full name" value={name} onChange={(e) => setName(e.target.value)} required variant="filled" sx={filledInputSx} disabled={isSaving} />
-              <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required variant="filled" sx={filledInputSx} disabled={isSaving} />
-              <TextField label="Age" type="number" value={age} onChange={(e) => setAge(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
-              <TextField label="Current Position" value={currentPosition} onChange={(e) => setCurrentPosition(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
-              <TextField label="Location" value={location} onChange={(e) => setLocation(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
-              <TextField label="Visa / Work Status" value={visaStatus} onChange={(e) => setVisaStatus(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
-              <TextField label="Years of Experience" type="number" value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
-              <TextField label="Salary Expectation" type="number" value={salaryExpectation} onChange={(e) => setSalaryExpectation(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
-              <TextField label="Availability Date" type="date" value={availabilityDate} onChange={(e) => setAvailabilityDate(e.target.value)} InputLabelProps={{ shrink: true }} variant="filled" sx={filledInputSx} disabled={isSaving} />
+        {openEdit && (
+          <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+            <div className={styles.modalContent}>
+              <div className={styles.modalHeader}>
+                <div className={styles.modalTitle}>Edit Applicant</div>
+                <button className={`${styles.modalClose}`} onClick={closeEditModal} disabled={isSaving} aria-label="Close">×</button>
+              </div>
 
-              <ChipInput label="Skills" values={skills} setValues={setSkills} disabled={isSaving} />
-              <ChipInput label="Awards" values={awards} setValues={setAwards} disabled={isSaving} />
-              <ChipInput label="Certifications" values={certifications} setValues={setCertifications} disabled={isSaving} />
+              <form id="applicant-form" onSubmit={handleSubmit} className={styles.modalBody}>
+                <div className={styles.modalRow}>
+                  <div className={styles.modalLabel}>Full name</div>
+                  <input className={styles.modalInput} value={name} onChange={(e) => setName(e.target.value)} required disabled={isSaving} />
+                </div>
 
-              {/* Projects */}
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle1">Projects</Typography>
-                {projects.map((p, i) => (
-                  <Stack key={i} spacing={1} sx={{ mt: 1 }}>
-                    <TextField label="Project Title" value={p.title} onChange={(e) => updateProject(i, "title", e.target.value)} disabled={isSaving} />
-                    <TextField label="Project Description" value={p.description} onChange={(e) => updateProject(i, "description", e.target.value)} multiline minRows={2} disabled={isSaving} />
-                    <Button color="error" onClick={() => removeProject(i)} disabled={isSaving}>
-                      Remove Project
-                    </Button>
-                  </Stack>
-                ))}
-                <Button onClick={addProject} sx={{ mt: 1 }} disabled={isSaving}>
-                  Add Project
-                </Button>
-              </Box>
+                <div className={styles.modalRow}>
+                  <div className={styles.modalLabel}>Email</div>
+                  <input className={styles.modalInput} value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isSaving} />
+                </div>
 
-              {/* Previous Positions */}
-              <Box>
-                <Typography variant="subtitle1">Previous Positions</Typography>
-                {previousPositions.map((pos, index) => (
-                  <Stack key={index} direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                    <TextField label="Title" value={pos.title} onChange={(e) => updatePreviousPosition(index, "title", e.target.value)} disabled={isSaving} />
-                    <TextField label="Organization" value={pos.org} onChange={(e) => updatePreviousPosition(index, "org", e.target.value)} disabled={isSaving} />
-                    <TextField label="Start Date" type="date" value={pos.start_date} onChange={(e) => updatePreviousPosition(index, "start_date", e.target.value)} InputLabelProps={{ shrink: true }} disabled={isSaving} />
-                    <TextField label="End Date" type="date" value={pos.end_date} onChange={(e) => updatePreviousPosition(index, "end_date", e.target.value)} InputLabelProps={{ shrink: true }} disabled={isSaving} />
-                    <IconButton color="error" onClick={() => removePreviousPosition(index)} disabled={isSaving}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Stack>
-                ))}
-                <Button onClick={addPreviousPosition} sx={{ mt: 1 }} disabled={isSaving}>
-                  Add Previous Position
-                </Button>
-              </Box>
+                <div className={styles.modalRow}>
+                  <div className={styles.modalLabel}>Age</div>
+                  <input type="number" className={styles.modalInput} value={age} onChange={(e) => setAge(e.target.value)} disabled={isSaving} />
+                </div>
 
-              {/* Education */}
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle1">Education</Typography>
-                {education.map((edu, index) => (
-                  <Stack key={index} direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                    <TextField label="Degree" value={edu.degree} onChange={(e) => updateEducation(index, "degree", e.target.value)} disabled={isSaving} />
-                    <TextField label="School" value={edu.school} onChange={(e) => updateEducation(index, "school", e.target.value)} disabled={isSaving} />
-                    <TextField label="Graduation Year" type="number" value={edu.graduation_year} onChange={(e) => updateEducation(index, "graduation_year", e.target.value)} disabled={isSaving} />
-                    <IconButton color="error" onClick={() => removeEducation(index)} disabled={isSaving}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Stack>
-                ))}
-                <Button onClick={addEducation} sx={{ mt: 1 }} disabled={isSaving}>
-                  Add Education Entry
-                </Button>
-              </Box>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={closeEditModal} disabled={isSaving}>Cancel</Button>
-            <Button
-              type="submit"
-              form="applicant-form"
-              variant="contained"
-              disabled={isSaving}
-              startIcon={isSaving ? <CircularProgress size={18} color="inherit" /> : undefined}
-              sx={{
-                background: 'linear-gradient(90deg,#7c3aed,#06b6d4)',
-                color: 'white',
-                '&:hover': { opacity: 0.95 },
-              }}
-            >
-              {isSaving ? 'Saving…' : 'Save'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+                <div className={styles.modalRow}>
+                  <div className={styles.modalLabel}>Current Position</div>
+                  <input className={styles.modalInput} value={currentPosition} onChange={(e) => setCurrentPosition(e.target.value)} disabled={isSaving} />
+                </div>
+
+                <div className={styles.modalRow}>
+                  <div className={styles.modalLabel}>Location</div>
+                  <input className={styles.modalInput} value={location} onChange={(e) => setLocation(e.target.value)} disabled={isSaving} />
+                </div>
+
+                <div className={styles.modalRow}>
+                  <div className={styles.modalLabel}>Visa / Work Status</div>
+                  <input className={styles.modalInput} value={visaStatus} onChange={(e) => setVisaStatus(e.target.value)} disabled={isSaving} />
+                </div>
+
+                <div className={styles.modalRow}>
+                  <div className={styles.modalLabel}>Years of Experience</div>
+                  <input type="number" className={styles.modalInput} value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)} disabled={isSaving} />
+                </div>
+
+                <div className={styles.modalRow}>
+                  <div className={styles.modalLabel}>Salary Expectation</div>
+                  <input type="number" className={styles.modalInput} value={salaryExpectation} onChange={(e) => setSalaryExpectation(e.target.value)} disabled={isSaving} />
+                </div>
+
+                <div className={styles.modalRow}>
+                  <div className={styles.modalLabel}>Availability Date</div>
+                  <input type="date" className={styles.modalInput} value={availabilityDate} onChange={(e) => setAvailabilityDate(e.target.value)} disabled={isSaving} />
+                </div>
+
+                <ChipInput label="Skills" values={skills} setValues={setSkills} disabled={isSaving} />
+                <ChipInput label="Awards" values={awards} setValues={setAwards} disabled={isSaving} />
+                <ChipInput label="Certifications" values={certifications} setValues={setCertifications} disabled={isSaving} />
+
+                {/* Projects */}
+                <div>
+                  <div className={styles.modalLabel} style={{ marginBottom: 8 }}>Projects</div>
+                  {projects.map((p, i) => (
+                    <div key={i} className={styles.profileCard}>
+                      <div className={styles.modalRow}>
+                        <input className={styles.modalInput} placeholder="Project Title" value={p.title} onChange={(e) => updateProject(i, 'title', e.target.value)} disabled={isSaving} />
+                      </div>
+                      <div style={{ marginTop: 8 }}>
+                        <textarea className={styles.modalTextarea} placeholder="Project Description" value={p.description} onChange={(e) => updateProject(i, 'description', e.target.value)} disabled={isSaving} />
+                      </div>
+                      <div className={styles.cardControls}>
+                        <button type="button" className={`${styles.modalBtn} ${styles.ghost}`} onClick={() => removeProject(i)} disabled={isSaving}>Remove</button>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: 8 }}>
+                    <button type="button" className={`${styles.modalBtn} ${styles.ghost}`} onClick={addProject} disabled={isSaving}>Add Project</button>
+                  </div>
+                </div>
+
+                {/* Previous Positions */}
+                <div>
+                  <div className={styles.modalLabel} style={{ marginBottom: 8 }}>Previous Positions</div>
+                  {previousPositions.map((pos, index) => (
+                    <div key={index} className={styles.profileCard}>
+                      <div className={styles.modalRow}>
+                        <input className={styles.modalInput} placeholder="Title" value={pos.title} onChange={(e) => updatePreviousPosition(index, 'title', e.target.value)} disabled={isSaving} />
+                        <input className={styles.modalInput} placeholder="Organization" value={pos.org} onChange={(e) => updatePreviousPosition(index, 'org', e.target.value)} disabled={isSaving} />
+                      </div>
+                      <div className={styles.modalRow} style={{ marginTop: 8 }}>
+                        <input type="date" className={styles.modalInput} value={pos.start_date} onChange={(e) => updatePreviousPosition(index, 'start_date', e.target.value)} disabled={isSaving} />
+                        <input type="date" className={styles.modalInput} value={pos.end_date} onChange={(e) => updatePreviousPosition(index, 'end_date', e.target.value)} disabled={isSaving} />
+                      </div>
+                      <div className={styles.cardControls}>
+                        <button type="button" className={`${styles.modalBtn} ${styles.ghost}`} onClick={() => removePreviousPosition(index)} disabled={isSaving}>Remove</button>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: 8 }}>
+                    <button type="button" className={`${styles.modalBtn} ${styles.ghost}`} onClick={addPreviousPosition} disabled={isSaving}>Add Previous Position</button>
+                  </div>
+                </div>
+
+                {/* Education */}
+                <div>
+                  <div className={styles.modalLabel} style={{ marginBottom: 8 }}>Education</div>
+                  {education.map((edu, index) => (
+                    <div key={index} className={styles.profileCard}>
+                      <div className={styles.modalRow}>
+                        <input className={styles.modalInput} placeholder="Degree" value={edu.degree} onChange={(e) => updateEducation(index, 'degree', e.target.value)} disabled={isSaving} />
+                        <input className={styles.modalInput} placeholder="School" value={edu.school} onChange={(e) => updateEducation(index, 'school', e.target.value)} disabled={isSaving} />
+                      </div>
+                      <div className={styles.modalRow} style={{ marginTop: 8 }}>
+                        <input type="number" className={styles.modalInput} placeholder="Graduation Year" value={edu.graduation_year} onChange={(e) => updateEducation(index, 'graduation_year', e.target.value)} disabled={isSaving} />
+                      </div>
+                      <div className={styles.cardControls}>
+                        <button type="button" className={`${styles.modalBtn} ${styles.ghost}`} onClick={() => removeEducation(index)} disabled={isSaving}>Remove</button>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: 8 }}>
+                    <button type="button" className={`${styles.modalBtn} ${styles.ghost}`} onClick={addEducation} disabled={isSaving}>Add Education Entry</button>
+                  </div>
+                </div>
+
+                <div className={styles.modalActions}>
+                  <button type="button" className={`${styles.modalBtn} ${styles.ghost}`} onClick={closeEditModal} disabled={isSaving}>Cancel</button>
+                  <button type="submit" className={`${styles.modalBtn} primary`} disabled={isSaving}>
+                    {isSaving ? (<span className="spinner" />) : 'Save'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </Box>
   );
 }

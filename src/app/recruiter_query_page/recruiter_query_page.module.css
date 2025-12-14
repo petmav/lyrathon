@@ -16,6 +16,16 @@
   background: rgba(10, 12, 18, 0.95);
 }
 
+.logoutWrap {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  z-index: 11;
+}
+
 .container {
   width: min(1200px, 100%);
   margin: 0 auto;
@@ -179,6 +189,139 @@
   margin-top: 8px;
   display: grid;
   gap: 6px;
+}
+
+.fieldLabel {
+  font-weight: 800;
+  margin-right: 8px;
+  display: inline-block;
+  min-width: 160px;
+}
+
+.profileCard {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255,255,255,0.03);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+  margin-top: 8px;
+}
+
+.profileCardTitle {
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.profileCardMeta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Modal styles for applicant edit (high contrast, non-MUI) */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modalContent {
+  width: min(920px, calc(100% - 40px));
+  max-height: 90vh;
+  overflow: auto;
+  background: linear-gradient(180deg, rgba(18,18,18,0.98), rgba(12,12,12,0.98));
+  border: 1px solid var(--border);
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.modalTitle {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.modalBody {
+  display: grid;
+  gap: 12px;
+}
+
+.modalRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.modalLabel {
+  min-width: 160px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.modalInput,
+.modalSelect {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  color: var(--text);
+  outline: none;
+}
+
+.modalTextarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  color: var(--text);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.modalBtn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.modalBtn.primary {
+  background: linear-gradient(90deg,#7c3aed,#06b6d4);
+  color: #050712;
+}
+
+.modalBtn.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.cardControls {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .cardText {
@@ -359,6 +502,7 @@
   background: rgba(255, 255, 255, 0.04);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
   position: relative;
+  color: var(--text);
 }
 
 .msgHeader {
@@ -409,23 +553,7 @@
   left: auto;
   background: linear-gradient(135deg, #a855f7, #22d3ee);
 }
-.shortlistBlock:before {
-  content: "AI";
-  position: absolute;
-  top: 0;
-  left: -38px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: 0.9rem;
-  color: #050712;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  background: linear-gradient(135deg, #22d3ee, #3b82f6);
-}
+/* Removed AI badge - not relevant for applicant profile */
 .composerBar {
   display: grid;
   grid-template-columns: 1fr auto;
