@@ -53,7 +53,7 @@ export default function ApplicantFormPage() {
       previous_positions: previousPositions,
       education,
     };
-    apiCall('/candidates/register', 'POST', formData)
+    apiCall('/api/candidates/register', 'POST', formData)
         .then((res) => {
             console.log(res);
         })

@@ -46,7 +46,7 @@ export const ragUtils = {
 };
 export const apiCall = (path: string, method: string, data = {}) => {
   return new Promise((resolve, reject) => {
-    let url = 'http://localhost:3000' + path;
+    let url = path;
     if (method === 'GET' && Object.keys(data).length !== 0) {
       url += `?${new URLSearchParams(data).toString()}`;
     }
