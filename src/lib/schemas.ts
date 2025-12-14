@@ -23,8 +23,15 @@ const optionalDateString = z.preprocess(
     .optional(),
 );
 
-const limitSchema = z.number().int().positive().max(100).optional();
+const limitSchema = z.number().int().positive();
 
+const defaultedLimitSchema = z
+  .preprocess((value) => {
+    if (value === undefined || value === null || value === '') return 100;
+    const num = typeof value === 'string' ? Number(value) : value;
+    return Number.isNaN(num as number) ? value : num;
+  }, limitSchema)
+  .default(100);
 export const previousPositionSchema = z
   .object({
     title: optionalNonEmptyString,
@@ -120,7 +127,7 @@ export const candidateFiltersSchema = z
     minExperience: z.number().min(0).optional(),
     maxSalary: z.number().min(0).optional(),
     availabilityBefore: optionalDateString,
-    limit: limitSchema,
+    limit: defaultedLimitSchema,
   })
   .strict();
 
@@ -148,7 +155,7 @@ export const candidateSearchResponseSchema = z.object({
 export const recruiterQueryRequestSchema = z
   .object({
     query: nonEmptyString,
-    limit: limitSchema,
+    limit: defaultedLimitSchema,
   })
   .strict();
 
@@ -173,7 +180,11 @@ export const shortlistResultSchema = z.object({
         salary_expectation: z.number().nullable(),
         match_summary: nonEmptyString,
         recommended_action: nonEmptyString,
-        confidence: z.number().min(0).max(1),
+        confidence: z.preprocess((value) => {
+          const n = Number.parseFloat(String(value));
+          if (!Number.isFinite(n)) return value;
+          return Math.min(1, Math.max(0, n));
+        }, z.number().min(0).max(1)),
       }),
     )
     .min(0)
