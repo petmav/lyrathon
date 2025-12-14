@@ -235,7 +235,6 @@ function ApplicantHome(): JSX.Element {
 
 
 function RecruiterHome(): JSX.Element {
-  const [loading, setLoading] = useState(false);
   return (
     <>
       {/* Recruiter hero */}
@@ -250,11 +249,9 @@ function RecruiterHome(): JSX.Element {
             </p>
 
             <div className={styles.recruiterCtas}>
-              <Link href={"/register"}>
-                <button type="submit" className={styles.button}>
+              <a className={styles.button} href="/register">
                 Query candidates
-                </button>
-              </Link>
+              </a> 
             </div>
 
             <div className={styles.pills} aria-label="Recruiter highlights">
