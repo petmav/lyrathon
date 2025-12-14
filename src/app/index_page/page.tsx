@@ -185,7 +185,7 @@ function RoleToggle({
     <div className={styles.roleToggle} role="group" aria-label="Switch view">
       <button
         type="button"
-        className={`${styles.roleBtn} ${role === "recruiter" ? styles.roleBtnActive : ""}`}
+        className={`${styles.roleBtn} ${role === "recruiter" ? `${styles.roleBtnActive} ${styles.roleBtnGlow}`:""}`}
         aria-pressed={role === "recruiter"}
         onClick={() => setRole("recruiter")}
       >
@@ -193,7 +193,7 @@ function RoleToggle({
       </button>
       <button
         type="button"
-        className={`${styles.roleBtn} ${role === "applicant" ? styles.roleBtnActive : ""}`}
+        className={`${styles.roleBtn} ${role === "applicant" ? `${styles.roleBtnActive} ${styles.roleBtnGlow}`:""}`}
         aria-pressed={role === "applicant"}
         onClick={() => setRole("applicant")}
       >
@@ -241,7 +241,7 @@ function RecruiterHome(): JSX.Element {
               Find the best talent by capability, not just credentials.
             </h2>
             <p>
-              Describe the role in plain English. We match candidates using real signals: skills, projects, tests, and proven outcomes.
+              Describe the role in plain English. We match thousands of candidates using real indicators: skills, projects, tests, and proven outcomes.
             </p>
 
             <div className={styles.recruiterCtas}>
@@ -250,6 +250,23 @@ function RecruiterHome(): JSX.Element {
               </a>
             </div>
 
+          <aside className={styles.landingCard} aria-label="How matching works">
+            <h3 className={styles.landingCardTitle}>How matching works</h3>
+          <div className={styles.kpiGrid}>
+            <div className={styles.kpi}>
+              <div className={styles.kpiNum}>1. </div>
+              <div className={styles.kpiLabel}>Describe the skills, credentials and qualifications you are looking for</div>
+            </div>
+            <div className={styles.kpi}>
+              <div className={styles.kpiNum}>2.</div>
+              <div className={styles.kpiLabel}>We streamline potential applicants and rank them</div>
+            </div>
+            <div className={styles.kpi}>
+              <div className={styles.kpiNum}>3.</div>
+              <div className={styles.kpiLabel}>Search through customised profiles and instantly connect</div>
+            </div>
+          </div>
+          </aside>
             <div className={styles.pills} aria-label="Recruiter highlights">
               <span className={styles.pill}>Capability matching</span>
               <span className={styles.pill}>Explainable results</span>
@@ -259,22 +276,6 @@ function RecruiterHome(): JSX.Element {
           </div>
 
           {/* Right card: “How the matching works” */}
-          <aside className={styles.landingCard} aria-label="How matching works">
-            <h3 className={styles.landingCardTitle}>How matching works</h3>
-
-            <div className={styles.kpi}>
-              <div className={styles.kpiNum}>1</div>
-              <div className={styles.kpiLabel}>Recruiter query → intent + must-haves</div>
-            </div>
-            <div className={styles.kpi}>
-              <div className={styles.kpiNum}>2</div>
-              <div className={styles.kpiLabel}>Score by capability signals</div>
-            </div>
-            <div className={styles.kpi}>
-              <div className={styles.kpiNum}>3</div>
-              <div className={styles.kpiLabel}>Rank + explain “why”</div>
-            </div>
-          </aside>
         </div>
       </section>
 
