@@ -1,0 +1,140 @@
+"use client"
+import { useState, FormEvent } from "react";
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Paper,
+  CircularProgress,
+} from "@mui/material";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+export default function RecruiterRegisterPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  const passwordsMatch = password === confirmPassword;
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!passwordsMatch) return;
+
+    setLoading(true);
+    try {
+      // On success, redirect to login
+      router.push("/recruiter_query_page");
+    } catch (err) {
+      setError("Network error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: `conic-gradient(from 0deg,
+    rgba(124,58,237,0) 0 20%,
+    rgba(124,58,237,1) 35%,
+    rgba(56,189,248,1) 50%,
+    rgba(34,197,94,1) 65%,
+    rgba(124,58,237,0) 80% 100%
+  )`,
+        p: 2,
+      }}
+    >
+      <Paper
+        elevation={3}
+        sx={{
+          width: "100%",
+          maxWidth: 420,
+          p: 4,
+          borderRadius: 3,
+        }}
+      >
+        <Box sx={{ textAlign: "center", mb: 3 }}>
+          <Typography variant="h5" fontWeight={600}>
+            Create a recruiter account
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Sign up as a recruiter to access the recruiter console
+          </Typography>
+        </Box>
+
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        >
+          <TextField
+            label="Full name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            fullWidth
+          />
+
+          <TextField
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            fullWidth
+          />
+
+          <TextField
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            fullWidth
+          />
+
+          <TextField
+            label="Confirm password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            error={!passwordsMatch && confirmPassword.length > 0}
+            helperText={
+              !passwordsMatch && confirmPassword.length > 0
+                ? "Passwords do not match"
+                : ""
+            }
+            required
+            fullWidth
+          />
+
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            disabled={loading || !passwordsMatch}
+            sx={{ mt: 1, borderRadius: 2 }}
+          >
+            {loading ? <CircularProgress size={24} /> : "Create account"}
+          </Button>
+        </Box>
+        {error && (
+          <Typography variant="body2" color="error" align="center" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
+      </Paper>
+    </Box>
+  );
+}

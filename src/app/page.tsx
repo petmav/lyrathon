@@ -194,7 +194,7 @@ export default function HomePage() {
                   <li>Transparent shortlist with contact details</li>
                 </ul>
                 <div className="card-actions">
-                  <Link className="btn primary" href="/recruiter_query_page">
+                  <Link className="btn primary" href="/register/recruiter">
                     Run a query
                   </Link>
                   <Link className="btn text" href="/api/query/shortlist">
