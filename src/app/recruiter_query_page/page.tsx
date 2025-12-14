@@ -117,29 +117,14 @@ export default function RecruiterQueryPage(): JSX.Element {
         setMessages((m) => [...m, { id: id(), role, text, ts: Date.now() }]);
     }
 
-    function handleSend(text: string) {
-        const trimmed = text.trim();
-        if (!trimmed) return;
+    async function handleSend(text: string) {
+        const res = await fetch("/api/query/shortlist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: text }),
+        });
 
-        addMessage("recruiter", trimmed);
-        setInput("");
-        setIsThinking(true);
-
-        // Replace this block with a real API call later.
-        // const matches = simpleMatch(trimmed);
-        // const reply =
-        //     matches.length === 0
-        //         ? "No matches found in the sample dataset. Try different keywords (skills, city, role)."
-        //         : `Top matches:\n${matches
-        //             .map(
-        //                 (c, i) =>
-        //                     `${i + 1}) ${c.name} — ${c.title} • ${c.location}\n   Skills: ${c.skills.join(
-        //                         ", "
-        //                     )}\n   Experience: ${c.years} yrs • Availability: ${c.availability}`
-        //             )
-        //             .join("\n")}\n\nTip: add must-have skills (e.g., “Next.js, tRPC”) to narrow results.`;
-        
-        const reply = "🚧 This is a demo page. Connect to your RAG/SQL/vector service to get real candidate matches. 🚧";
+        const reply = await res.text();
         addMessage("assistant", reply);
         setIsThinking(false);
         scrollToBottom();
