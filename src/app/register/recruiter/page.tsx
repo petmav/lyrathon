@@ -30,6 +30,7 @@ export default function RecruiterRegisterPage() {
     setLoading(true);
     try {
       // On success, redirect to login
+      await new Promise(resolve => setTimeout(resolve, 2000));
       router.push("/recruiter_query_page");
     } catch (err) {
       setError("Network error");
