@@ -1,9 +1,17 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import styles from "./recruiter_query_page.module.css";
 import { JSX } from "react/jsx-runtime";
 import Link from "next/link";
+
+const THINKING_PHRASES = [
+    "Thinking...",
+    "Processing your request...",
+    "Finding the best applicants for you...",
+    "Ranking and comparing matches...",
+    "Summarizing the strongest fits...",
+];
 
 type Role = {
     name: string;
@@ -110,6 +118,10 @@ function simpleMatch(query: string): Role[] {
 export default function RecruiterQueryPage(): JSX.Element {
     const [input, setInput] = useState("");
     const [isThinking, setIsThinking] = useState(false);
+    const [thinkingElapsedMs, setThinkingElapsedMs] = useState(0);
+    const [thinkingPhraseIdx, setThinkingPhraseIdx] = useState(0);
+    const [thinkingDisplay, setThinkingDisplay] = useState("");
+    const [typedText, setTypedText] = useState<Record<string, string>>({});
     const [timeline, setTimeline] = useState<TimelineItem[]>(() => [
         {
             kind: "message",
@@ -133,6 +145,90 @@ export default function RecruiterQueryPage(): JSX.Element {
         ],
         []
     );
+
+    useEffect(() => {
+        const timers: number[] = [];
+
+        const runTyping = (idValue: string, full: string) => {
+            let i = 0;
+            const total = Math.min(Math.max(full.length * 40, 800), 4500);
+            const step = Math.max(20, Math.floor(total / Math.max(full.length, 1)));
+
+            const tick = () => {
+                i += 1;
+                setTypedText((prev) => ({ ...prev, [idValue]: full.slice(0, i) }));
+                if (i < full.length) {
+                    const t = window.setTimeout(tick, step);
+                    timers.push(t);
+                }
+            };
+            tick();
+        };
+
+        timeline.forEach((item) => {
+            if (item.kind !== "message") return;
+            const m = item.msg;
+            if (m.role !== "assistant") return;
+            const full = m.text;
+            if (typedText[m.id]?.length === full.length) return;
+            runTyping(m.id, full);
+        });
+
+        return () => {
+            timers.forEach((t) => clearTimeout(t));
+        };
+    }, [timeline]);
+
+    useEffect(() => {
+        let elapsedTimer: number | null = null;
+        let typingTimer: number | null = null;
+        let rotateTimer: number | null = null;
+        let phraseIdx = 0;
+
+        const typePhrase = () => {
+            const phrase = THINKING_PHRASES[phraseIdx];
+            setThinkingPhraseIdx(phraseIdx);
+            let i = 0;
+            const total = Math.min(Math.max(phrase.length * 40, 800), 4000);
+            const step = Math.max(25, Math.floor(total / Math.max(phrase.length, 1)));
+            setThinkingDisplay("");
+
+            const tick = () => {
+                i += 1;
+                setThinkingDisplay(phrase.slice(0, i));
+                if (i < phrase.length) {
+                    typingTimer = window.setTimeout(tick, step);
+                } else {
+                    rotateTimer = window.setTimeout(() => {
+                        phraseIdx = (phraseIdx + 1) % THINKING_PHRASES.length;
+                        typePhrase();
+                    }, 900);
+                }
+            };
+
+            tick();
+        };
+
+        if (isThinking) {
+            const started = performance.now();
+            setThinkingElapsedMs(0);
+            setThinkingPhraseIdx(0);
+            phraseIdx = 0;
+            typePhrase();
+            elapsedTimer = window.setInterval(() => {
+                setThinkingElapsedMs(Math.max(0, performance.now() - started));
+            }, 80);
+        } else {
+            setThinkingDisplay("");
+            setThinkingElapsedMs(0);
+        }
+
+        return () => {
+            if (elapsedTimer) window.clearInterval(elapsedTimer);
+            if (typingTimer) window.clearTimeout(typingTimer);
+            if (rotateTimer) window.clearTimeout(rotateTimer);
+        };
+    }, [isThinking]);
 
     function scrollToBottom() {
         requestAnimationFrame(() => {
@@ -179,7 +275,7 @@ export default function RecruiterQueryPage(): JSX.Element {
                                 id: id(),
                                 role: "assistant",
                                 ts: Date.now(),
-                                text: `Summary: ${typed.overall_summary}`,
+                                text: typed.overall_summary,
                             },
                         },
                     ]);
@@ -209,17 +305,13 @@ export default function RecruiterQueryPage(): JSX.Element {
                         <div className={styles.brand}>
                             <span className={styles.brandMark}>L</span>
                             <span className={styles.brandText}>Linkdr</span>
+                            <p className={styles.eyebrow}>Recruiter Console</p>
                         </div>
                         <Link className={styles.back} href="/">
                             ← Back to home
                         </Link>
                     </div>
-                    <div className={styles.headerCopy}>
-                        <p className={styles.eyebrow}>Recruiter Console</p>
-                        <p className={styles.subtitle}>
-                            Hard filters via SQL, semantic recall via vectors, re-ranked with LLM reasoning.
-                        </p>
-                    </div>
+                    
                 </div>
             </header>
 
@@ -255,11 +347,15 @@ export default function RecruiterQueryPage(): JSX.Element {
                                             className={`${styles.msgRow} ${m.role === "recruiter" ? styles.right : styles.left}`}
                                         >
                                             <div className={`${styles.msg} ${m.role === "recruiter" ? styles.user : styles.bot}`}>
-                                                {m.text.split("\n").map((line, idx) => (
-                                                    <p key={idx} className={styles.line}>
-                                                        {line}
-                                                    </p>
-                                                ))}
+                                                {m.role === "assistant" ? (
+                                                    <p className={styles.line}>{typedText[m.id] ?? ""}</p>
+                                                ) : (
+                                                    m.text.split("\n").map((line, idx) => (
+                                                        <p key={idx} className={styles.line}>
+                                                            {line}
+                                                        </p>
+                                                    ))
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -275,8 +371,12 @@ export default function RecruiterQueryPage(): JSX.Element {
                                             </p>
                                         </div>
                                         <div className={styles.shortlistGrid}>
-                                            {item.data.shortlist.map((c) => (
-                                                <article key={c.candidate_id} className={styles.shortlistCard}>
+                                            {item.data.shortlist.map((c, idx) => (
+                                                <article
+                                                    key={c.candidate_id}
+                                                    className={styles.shortlistCard}
+                                                    style={{ ["--card-idx" as any]: idx }}
+                                                >
                                                     <header className={styles.cardHeader}>
                                                         <div>
                                                             <h3 className={styles.cardTitle}>{c.name}</h3>
@@ -330,7 +430,10 @@ export default function RecruiterQueryPage(): JSX.Element {
                             {isThinking && (
                                 <div className={`${styles.msgRow} ${styles.left}`}>
                                     <div className={`${styles.msg} ${styles.bot}`}>
-                                        <p className={`${styles.line} ${styles.thinking}`}>Thinking…</p>
+                                        <p className={`${styles.line} ${styles.thinking}`}>
+                                            {thinkingDisplay || THINKING_PHRASES[thinkingPhraseIdx]}
+                                        </p>
+                                        <p className={styles.thinkingTimer}>{(thinkingElapsedMs / 1000).toFixed(2)}s</p>
                                     </div>
                                 </div>
                             )}
