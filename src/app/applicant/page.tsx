@@ -11,16 +11,17 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  AppBar,
-  Toolbar,
   Stack,
   IconButton,
   Chip,
+  CircularProgress,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
 import { apiCall } from "@/lib/utils";
+import Link from "next/link";
+import styles from "../recruiter_query_page/recruiter_query_page.module.css";
 import { useRouter } from "next/navigation";
 
 /* =======================
@@ -71,9 +72,10 @@ interface ChipInputProps {
   label: string;
   values: string[];
   setValues: React.Dispatch<React.SetStateAction<string[]>>;
+  disabled?: boolean;
 }
 
-function ChipInput({ label, values, setValues }: ChipInputProps) {
+function ChipInput({ label, values, setValues, disabled }: ChipInputProps) {
   const [input, setInput] = useState("");
 
   const addValue = () => {
@@ -97,6 +99,12 @@ function ChipInput({ label, values, setValues }: ChipInputProps) {
           }
         }}
         fullWidth
+        variant="filled"
+        disabled={disabled}
+        sx={{
+          '& .MuiFilledInput-root': { background: 'rgba(255,255,255,0.04)', color: 'white' },
+          '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+        }}
       />
       <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
         {values.map((value, index) => (
@@ -106,6 +114,8 @@ function ChipInput({ label, values, setValues }: ChipInputProps) {
             onDelete={() =>
               setValues(values.filter((_, i) => i !== index))
             }
+            sx={{ background: 'rgba(255,255,255,0.06)', color: 'inherit' }}
+            disabled={disabled}
           />
         ))}
       </Stack>
@@ -136,6 +146,12 @@ export default function ApplicantFormPage(): JSX.Element {
   const [previousPositions, setPreviousPositions] = useState<PreviousPosition[]>([]);
   const [education, setEducation] = useState<EducationEntry[]>([]);
   const [openEdit, setOpenEdit] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const filledInputSx = {
+    '& .MuiFilledInput-root': { background: 'rgba(255,255,255,0.04)', color: 'white' },
+    '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+    '& .MuiFilledInput-root:before': { borderBottomColor: 'rgba(255,255,255,0.06)' },
+  };
   useEffect(() => {
     try {
       const candidateId = localStorage.getItem("candidate_id");
@@ -212,8 +228,9 @@ export default function ApplicantFormPage(): JSX.Element {
      Submit
   ======================= */
 
-  const handleSubmit = (e: SyntheticEvent): void => {
+  const handleSubmit = async (e: SyntheticEvent): Promise<void> => {
     e.preventDefault();
+    setIsSaving(true);
 
     const formData: CandidateFormData = {
       name,
@@ -240,13 +257,16 @@ export default function ApplicantFormPage(): JSX.Element {
       education,
     };
 
-    apiCall("/api/candidates/register", "POST", formData)
-      .then((res) => {
-        // close modal if open and navigate to details
-        setOpenEdit(false);
-        console.log(res);
-      })
-      .catch((err) => console.log(err));
+    try {
+      const res = await apiCall("/api/candidates/register", "POST", formData);
+      // close modal if open and navigate to details
+      setOpenEdit(false);
+      console.log(res);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   /* =======================
@@ -329,127 +349,140 @@ export default function ApplicantFormPage(): JSX.Element {
   ======================= */
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "grey.100" }}>
-      <AppBar position="static" elevation={1} color="default">
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-          <Typography variant="h6" fontWeight={600}>
-            Applicant Profile
-          </Typography>
-          <Button color="inherit" onClick={handleLogout}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ minHeight: "100vh", bgcolor: "#07090b", color: 'text.primary' }}>
+      <header className={styles.header}>
+        <div className={`${styles.container} ${styles.headerInner}`}>
+          <div className={styles.brandRow}>
+            <div className={styles.brand}>
+              <span className={styles.brandMark}>L</span>
+              <span className={styles.brandText}>Linkdr</span>
+              <p className={styles.eyebrow}>Applicant Profile</p>
+            </div>
 
-      <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-        <Paper sx={{ width: "100%", maxWidth: 900, p: 4, borderRadius: 3 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h5" fontWeight={600} gutterBottom>
-              Applicant Profile
-            </Typography>
-            <Button startIcon={<EditIcon />} onClick={openEditModal}>
-              Edit
-            </Button>
-          </Stack>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Link className={styles.back} href="/">← Back to home</Link>
+              <Button color="inherit" onClick={handleLogout} sx={{ color: 'white' }}>
+                Logout
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 2 }}>
-            <Typography><strong>Name:</strong> {name || "—"}</Typography>
-            <Typography><strong>Email:</strong> {email || "—"}</Typography>
-            <Typography><strong>Age:</strong> {age || "—"}</Typography>
-            <Typography><strong>Current Position:</strong> {currentPosition || "—"}</Typography>
-            <Typography><strong>Location:</strong> {location || "—"}</Typography>
-            <Typography><strong>Visa / Work Status:</strong> {visaStatus || "—"}</Typography>
-            <Typography><strong>Years of Experience:</strong> {experienceYears || "—"}</Typography>
-            <Typography><strong>Salary Expectation:</strong> {salaryExpectation || "—"}</Typography>
-            <Typography><strong>Availability Date:</strong> {availabilityDate || "—"}</Typography>
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <section className={styles.results}>
+            <div className={styles.shortlistBlock}>
+              <div className={styles.resultsHeader}>
+                <h2 className={styles.sectionTitle}>Applicant Profile</h2>
+                <div>
+                  <button onClick={openEditModal} style={{ marginRight: 12 }} className={styles.quick}>Edit</button>
+                </div>
+              </div>
 
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="subtitle2">Skills</Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
-                {skills.length ? skills.map((s, i) => <Chip key={i} label={s} />) : <Typography>—</Typography>}
-              </Stack>
-            </Box>
+              <div style={{ padding: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div><strong>Name:</strong> {name || '—'}</div>
+                  <div><strong>Email:</strong> {email || '—'}</div>
+                  <div><strong>Age:</strong> {age || '—'}</div>
+                  <div><strong>Current Position:</strong> {currentPosition || '—'}</div>
+                  <div><strong>Location:</strong> {location || '—'}</div>
+                  <div><strong>Visa / Work Status:</strong> {visaStatus || '—'}</div>
+                  <div><strong>Years of Experience:</strong> {experienceYears || '—'}</div>
+                  <div><strong>Salary Expectation:</strong> {salaryExpectation || '—'}</div>
+                  <div><strong>Availability Date:</strong> {availabilityDate || '—'}</div>
+                </div>
 
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="subtitle2">Awards</Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
-                {awards.length ? awards.map((a, i) => <Chip key={i} label={a} />) : <Typography>—</Typography>}
-              </Stack>
-            </Box>
+                <div style={{ marginTop: 12 }}>
+                  <div className={styles.sectionTitle}>Skills</div>
+                  <div className={styles.tags} style={{ marginTop: 8 }}>
+                    {skills.length ? skills.map((s, i) => <span key={i} className={styles.tag}>{s}</span>) : <div>—</div>}
+                  </div>
+                </div>
 
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="subtitle2">Certifications</Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
-                {certifications.length ? certifications.map((c, i) => <Chip key={i} label={c} />) : <Typography>—</Typography>}
-              </Stack>
-            </Box>
+                <div style={{ marginTop: 12 }}>
+                  <div className={styles.sectionTitle}>Awards</div>
+                  <div className={styles.tags} style={{ marginTop: 8 }}>
+                    {awards.length ? awards.map((a, i) => <span key={i} className={styles.tag}>{a}</span>) : <div>—</div>}
+                  </div>
+                </div>
 
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle1">Projects</Typography>
-              {projects.length ? projects.map((p, i) => (
-                <Box key={i} sx={{ mt: 1 }}>
-                  <Typography><strong>{p.title}</strong></Typography>
-                  <Typography variant="body2">{p.description}</Typography>
-                </Box>
-              )) : <Typography sx={{ mt: 1 }}>—</Typography>}
-            </Box>
+                <div style={{ marginTop: 12 }}>
+                  <div className={styles.sectionTitle}>Certifications</div>
+                  <div className={styles.tags} style={{ marginTop: 8 }}>
+                    {certifications.length ? certifications.map((c, i) => <span key={i} className={styles.tag}>{c}</span>) : <div>—</div>}
+                  </div>
+                </div>
 
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle1">Previous Positions</Typography>
-              {previousPositions.length ? previousPositions.map((pos, i) => (
-                <Box key={i} sx={{ mt: 1 }}>
-                  <Typography><strong>{pos.title}</strong> at {pos.org}</Typography>
-                  <Typography variant="body2">{pos.start_date} — {pos.end_date}</Typography>
-                </Box>
-              )) : <Typography sx={{ mt: 1 }}>—</Typography>}
-            </Box>
+                <div style={{ marginTop: 16 }}>
+                  <div className={styles.sectionTitle}>Projects</div>
+                  {projects.length ? projects.map((p, i) => (
+                    <div key={i} style={{ marginTop: 8 }}>
+                      <div style={{ fontWeight: 700, color: 'white' }}>{p.title}</div>
+                      <div style={{ color: 'rgba(255,255,255,0.8)' }}>{p.description}</div>
+                    </div>
+                  )) : <div style={{ marginTop: 8 }}>—</div>}
+                </div>
 
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle1">Education</Typography>
-              {education.length ? education.map((edu, i) => (
-                <Box key={i} sx={{ mt: 1 }}>
-                  <Typography><strong>{edu.degree}</strong>, {edu.school}</Typography>
-                  <Typography variant="body2">Graduation: {edu.graduation_year}</Typography>
-                </Box>
-              )) : <Typography sx={{ mt: 1 }}>—</Typography>}
-            </Box>
-          </Box>
-        </Paper>
+                <div style={{ marginTop: 16 }}>
+                  <div className={styles.sectionTitle}>Previous Positions</div>
+                  {previousPositions.length ? previousPositions.map((pos, i) => (
+                    <div key={i} style={{ marginTop: 8 }}>
+                      <div style={{ fontWeight: 700, color: 'white' }}>{pos.title} at {pos.org}</div>
+                      <div style={{ color: 'rgba(255,255,255,0.8)' }}>{pos.start_date} — {pos.end_date}</div>
+                    </div>
+                  )) : <div style={{ marginTop: 8 }}>—</div>}
+                </div>
 
-        <Dialog open={openEdit} onClose={closeEditModal} fullWidth maxWidth="md">
-          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ marginTop: 16 }}>
+                  <div className={styles.sectionTitle}>Education</div>
+                  {education.length ? education.map((edu, i) => (
+                    <div key={i} style={{ marginTop: 8 }}>
+                      <div style={{ fontWeight: 700, color: 'white' }}>{edu.degree}, {edu.school}</div>
+                      <div style={{ color: 'rgba(255,255,255,0.8)' }}>Graduation: {edu.graduation_year}</div>
+                    </div>
+                  )) : <div style={{ marginTop: 8 }}>—</div>}
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+        <Dialog open={openEdit} onClose={closeEditModal} fullWidth maxWidth="md" PaperProps={{ sx: { background: 'rgba(16,16,16,0.95)', color: 'white' } }}>
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
             Edit Applicant
-            <IconButton onClick={closeEditModal} size="small"><CloseIcon /></IconButton>
+            <IconButton onClick={closeEditModal} size="small" disabled={isSaving}><CloseIcon sx={{ color: 'white' }} /></IconButton>
           </DialogTitle>
           <DialogContent>
             <Box id="applicant-form" component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <TextField label="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
-              <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              <TextField label="Age" type="number" value={age} onChange={(e) => setAge(e.target.value)} />
-              <TextField label="Current Position" value={currentPosition} onChange={(e) => setCurrentPosition(e.target.value)} />
-              <TextField label="Location" value={location} onChange={(e) => setLocation(e.target.value)} />
-              <TextField label="Visa / Work Status" value={visaStatus} onChange={(e) => setVisaStatus(e.target.value)} />
-              <TextField label="Years of Experience" type="number" value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)} />
-              <TextField label="Salary Expectation" type="number" value={salaryExpectation} onChange={(e) => setSalaryExpectation(e.target.value)} />
-              <TextField label="Availability Date" type="date" value={availabilityDate} onChange={(e) => setAvailabilityDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+              <TextField label="Full name" value={name} onChange={(e) => setName(e.target.value)} required variant="filled" sx={filledInputSx} disabled={isSaving} />
+              <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required variant="filled" sx={filledInputSx} disabled={isSaving} />
+              <TextField label="Age" type="number" value={age} onChange={(e) => setAge(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
+              <TextField label="Current Position" value={currentPosition} onChange={(e) => setCurrentPosition(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
+              <TextField label="Location" value={location} onChange={(e) => setLocation(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
+              <TextField label="Visa / Work Status" value={visaStatus} onChange={(e) => setVisaStatus(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
+              <TextField label="Years of Experience" type="number" value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
+              <TextField label="Salary Expectation" type="number" value={salaryExpectation} onChange={(e) => setSalaryExpectation(e.target.value)} variant="filled" sx={filledInputSx} disabled={isSaving} />
+              <TextField label="Availability Date" type="date" value={availabilityDate} onChange={(e) => setAvailabilityDate(e.target.value)} InputLabelProps={{ shrink: true }} variant="filled" sx={filledInputSx} disabled={isSaving} />
 
-              <ChipInput label="Skills" values={skills} setValues={setSkills} />
-              <ChipInput label="Awards" values={awards} setValues={setAwards} />
-              <ChipInput label="Certifications" values={certifications} setValues={setCertifications} />
+              <ChipInput label="Skills" values={skills} setValues={setSkills} disabled={isSaving} />
+              <ChipInput label="Awards" values={awards} setValues={setAwards} disabled={isSaving} />
+              <ChipInput label="Certifications" values={certifications} setValues={setCertifications} disabled={isSaving} />
 
               {/* Projects */}
               <Box sx={{ mt: 2 }}>
                 <Typography variant="subtitle1">Projects</Typography>
                 {projects.map((p, i) => (
                   <Stack key={i} spacing={1} sx={{ mt: 1 }}>
-                    <TextField label="Project Title" value={p.title} onChange={(e) => updateProject(i, "title", e.target.value)} />
-                    <TextField label="Project Description" value={p.description} onChange={(e) => updateProject(i, "description", e.target.value)} multiline minRows={2} />
-                    <Button color="error" onClick={() => removeProject(i)}>
+                    <TextField label="Project Title" value={p.title} onChange={(e) => updateProject(i, "title", e.target.value)} disabled={isSaving} />
+                    <TextField label="Project Description" value={p.description} onChange={(e) => updateProject(i, "description", e.target.value)} multiline minRows={2} disabled={isSaving} />
+                    <Button color="error" onClick={() => removeProject(i)} disabled={isSaving}>
                       Remove Project
                     </Button>
                   </Stack>
                 ))}
-                <Button onClick={addProject} sx={{ mt: 1 }}>
+                <Button onClick={addProject} sx={{ mt: 1 }} disabled={isSaving}>
                   Add Project
                 </Button>
               </Box>
@@ -459,16 +492,16 @@ export default function ApplicantFormPage(): JSX.Element {
                 <Typography variant="subtitle1">Previous Positions</Typography>
                 {previousPositions.map((pos, index) => (
                   <Stack key={index} direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                    <TextField label="Title" value={pos.title} onChange={(e) => updatePreviousPosition(index, "title", e.target.value)} />
-                    <TextField label="Organization" value={pos.org} onChange={(e) => updatePreviousPosition(index, "org", e.target.value)} />
-                    <TextField label="Start Date" type="date" value={pos.start_date} onChange={(e) => updatePreviousPosition(index, "start_date", e.target.value)} InputLabelProps={{ shrink: true }} />
-                    <TextField label="End Date" type="date" value={pos.end_date} onChange={(e) => updatePreviousPosition(index, "end_date", e.target.value)} InputLabelProps={{ shrink: true }} />
-                    <IconButton color="error" onClick={() => removePreviousPosition(index)}>
+                    <TextField label="Title" value={pos.title} onChange={(e) => updatePreviousPosition(index, "title", e.target.value)} disabled={isSaving} />
+                    <TextField label="Organization" value={pos.org} onChange={(e) => updatePreviousPosition(index, "org", e.target.value)} disabled={isSaving} />
+                    <TextField label="Start Date" type="date" value={pos.start_date} onChange={(e) => updatePreviousPosition(index, "start_date", e.target.value)} InputLabelProps={{ shrink: true }} disabled={isSaving} />
+                    <TextField label="End Date" type="date" value={pos.end_date} onChange={(e) => updatePreviousPosition(index, "end_date", e.target.value)} InputLabelProps={{ shrink: true }} disabled={isSaving} />
+                    <IconButton color="error" onClick={() => removePreviousPosition(index)} disabled={isSaving}>
                       <DeleteIcon />
                     </IconButton>
                   </Stack>
                 ))}
-                <Button onClick={addPreviousPosition} sx={{ mt: 1 }}>
+                <Button onClick={addPreviousPosition} sx={{ mt: 1 }} disabled={isSaving}>
                   Add Previous Position
                 </Button>
               </Box>
@@ -478,28 +511,38 @@ export default function ApplicantFormPage(): JSX.Element {
                 <Typography variant="subtitle1">Education</Typography>
                 {education.map((edu, index) => (
                   <Stack key={index} direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                    <TextField label="Degree" value={edu.degree} onChange={(e) => updateEducation(index, "degree", e.target.value)} />
-                    <TextField label="School" value={edu.school} onChange={(e) => updateEducation(index, "school", e.target.value)} />
-                    <TextField label="Graduation Year" type="number" value={edu.graduation_year} onChange={(e) => updateEducation(index, "graduation_year", e.target.value)} />
-                    <IconButton color="error" onClick={() => removeEducation(index)}>
+                    <TextField label="Degree" value={edu.degree} onChange={(e) => updateEducation(index, "degree", e.target.value)} disabled={isSaving} />
+                    <TextField label="School" value={edu.school} onChange={(e) => updateEducation(index, "school", e.target.value)} disabled={isSaving} />
+                    <TextField label="Graduation Year" type="number" value={edu.graduation_year} onChange={(e) => updateEducation(index, "graduation_year", e.target.value)} disabled={isSaving} />
+                    <IconButton color="error" onClick={() => removeEducation(index)} disabled={isSaving}>
                       <DeleteIcon />
                     </IconButton>
                   </Stack>
                 ))}
-                <Button onClick={addEducation} sx={{ mt: 1 }}>
+                <Button onClick={addEducation} sx={{ mt: 1 }} disabled={isSaving}>
                   Add Education Entry
                 </Button>
               </Box>
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={closeEditModal}>Cancel</Button>
-            <Button type="submit" form="applicant-form" variant="contained">
-              Save
+            <Button onClick={closeEditModal} disabled={isSaving}>Cancel</Button>
+            <Button
+              type="submit"
+              form="applicant-form"
+              variant="contained"
+              disabled={isSaving}
+              startIcon={isSaving ? <CircularProgress size={18} color="inherit" /> : undefined}
+              sx={{
+                background: 'linear-gradient(90deg,#7c3aed,#06b6d4)',
+                color: 'white',
+                '&:hover': { opacity: 0.95 },
+              }}
+            >
+              {isSaving ? 'Saving…' : 'Save'}
             </Button>
           </DialogActions>
         </Dialog>
       </Box>
-    </Box>
   );
 }
