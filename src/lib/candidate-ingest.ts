@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { pool } from '@/lib/db';
+import { db } from '@/lib/db';
 import { generateEmbedding, getEmbeddingModel } from '@/lib/embeddings';
 import { vectorToSql } from '@/lib/vector';
 import type { CandidateInputPayload } from '@/lib/schemas';
@@ -42,13 +42,13 @@ type CandidateEmbeddingSource = {
 export async function saveCandidate(
   input: CandidateInput,
 ): Promise<CandidateRecord> {
-  const existing = await pool.query(
+  const existing = await db.query(
     `SELECT candidate_id FROM candidate WHERE email = $1`,
     [input.email],
   );
 
   if (!existing.rowCount) {
-    const result = await pool.query(
+    const result = await db.query(
       `
         INSERT INTO candidate (
           name,
@@ -133,7 +133,7 @@ export async function saveCandidate(
   updates.push('profile_updated_at = NOW()');
   values.push(input.email);
 
-  const result = await pool.query(
+  const result = await db.query(
     `
       UPDATE candidate
       SET ${updates.join(', ')}
@@ -147,7 +147,7 @@ export async function saveCandidate(
 }
 
 export async function refreshCandidateEmbedding(candidateId: string) {
-  const candidateResult = await pool.query(
+  const candidateResult = await db.query(
     `
       SELECT
         candidate_id,
@@ -176,7 +176,7 @@ export async function refreshCandidateEmbedding(candidateId: string) {
   const embeddingText = buildEmbeddingText(candidate);
   const contentHash = createHash('sha256').update(embeddingText).digest('hex');
 
-  const existing = await pool.query(
+  const existing = await db.query(
     `SELECT content_hash FROM candidate_embeddings WHERE candidate_id = $1`,
     [candidateId],
   );
@@ -193,7 +193,7 @@ export async function refreshCandidateEmbedding(candidateId: string) {
   const vector = vectorToSql(embedding);
   const model = getEmbeddingModel();
 
-  await pool.query(
+  await db.query(
     `
       INSERT INTO candidate_embeddings (
         candidate_id,

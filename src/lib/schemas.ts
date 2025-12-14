@@ -38,7 +38,17 @@ export const educationEntrySchema = z
   .object({
     degree: optionalNonEmptyString,
     school: optionalNonEmptyString,
-    graduation_year: z.number().int().min(1900).max(2100).optional(),
+    graduation_year: z
+      .preprocess(
+        (value) => {
+          if (typeof value === 'string') {
+            const parsed = Number(value);
+            return Number.isNaN(parsed) ? value : parsed;
+          }
+          return value;
+        },
+        z.number().int().min(1900).max(2100).optional(),
+      ),
   })
   .strict();
 
@@ -147,6 +157,8 @@ export const recruiterQueryResponseSchema = z.object({
   data: z.array(candidateSearchResultSchema),
 });
 
+export const SHORTLIST_MAX_RESULTS = 10;
+
 export const shortlistResultSchema = z.object({
   shortlist: z
     .array(
@@ -165,7 +177,7 @@ export const shortlistResultSchema = z.object({
       }),
     )
     .min(0)
-    .max(5),
+    .max(SHORTLIST_MAX_RESULTS),
   overall_summary: nonEmptyString,
 });
 

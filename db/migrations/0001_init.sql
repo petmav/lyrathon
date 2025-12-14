@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS company (
 CREATE TABLE IF NOT EXISTS candidate (
     candidate_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    age SMALLINT NOT NULL,
+    age SMALLINT,
     email CITEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     current_position TEXT NOT NULL DEFAULT 'Not employed',
