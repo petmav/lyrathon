@@ -4,7 +4,7 @@ import {
   type CandidateFilters,
 } from '@/lib/candidate-search';
 import * as candidateSearch from '@/lib/candidate-search';
-import { pool } from '@/lib/db';
+import { db } from '@/lib/db';
 
 describe('tokenizeSearchTerm', () => {
   it('splits on whitespace and removes empty tokens', () => {
@@ -22,7 +22,7 @@ describe('tokenizeSearchTerm', () => {
 
 describe('searchCandidates', () => {
   it('returns empty array when no candidates match', async () => {
-    const spy = jest.spyOn(pool, 'query').mockResolvedValue({
+    const spy = jest.spyOn(db, 'query').mockResolvedValue({
       rows: [],
     } as any);
 
@@ -37,7 +37,7 @@ describe('searchCandidates', () => {
       { candidate_id: '1', candidate: 'Alice', preference_score: 2 },
       { candidate_id: '2', candidate: 'Bob', preference_score: 1 },
     ];
-    const spy = jest.spyOn(pool, 'query').mockResolvedValue({
+    const spy = jest.spyOn(db, 'query').mockResolvedValue({
       rows: mockRows,
     } as any);
 
@@ -48,7 +48,7 @@ describe('searchCandidates', () => {
   });
 
   it('clamps limit to 100 and applies location scoring aliases', async () => {
-    const spy = jest.spyOn(pool, 'query').mockResolvedValue({
+    const spy = jest.spyOn(db, 'query').mockResolvedValue({
       rows: [],
     } as any);
 
@@ -66,7 +66,7 @@ describe('searchCandidates', () => {
   });
 
   it('appends semantic embedding vector parameter before the limit', async () => {
-    const spy = jest.spyOn(pool, 'query').mockResolvedValue({
+    const spy = jest.spyOn(db, 'query').mockResolvedValue({
       rows: [],
     } as any);
 

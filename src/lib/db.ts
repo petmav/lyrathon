@@ -11,7 +11,7 @@ declare global {
   var pgPool: Pool | undefined;
 }
 
-export const pool =
+export const db =
   global.pgPool ||
   new Pool({
     connectionString,
@@ -20,5 +20,5 @@ export const pool =
   });
 
 if (process.env.NODE_ENV !== 'production') {
-  global.pgPool = pool;
+  global.pgPool = db;
 }

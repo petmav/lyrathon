@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { pool } from '@/lib/db';
+import { db } from '@/lib/db';
 import { verifyPassword } from '@/lib/auth';
 
 export async function POST(req: Request) {
@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     if (!email || !password) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
     // Find candidate by email in candidate table
-    const result = await pool.query(`SELECT * FROM candidate WHERE email = $1 LIMIT 1`, [email.toLowerCase()]);
+    const result = await db.query(`SELECT * FROM candidate WHERE email = $1 LIMIT 1`, [email.toLowerCase()]);
     if (!result.rowCount) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
 
     const candidate = result.rows[0] as any;

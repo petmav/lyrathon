@@ -1,4 +1,4 @@
-import { pool } from '@/lib/db';
+import { db } from '@/lib/db';
 import { vectorToSql } from '@/lib/vector';
 
 export type CandidateFilters = {
@@ -112,7 +112,7 @@ export async function searchCandidates(
     LIMIT $${values.length}
   `;
 
-  const result = await pool.query(query, values);
+  const result = await db.query(query, values);
   return result.rows as CandidateResult[];
 }
 
