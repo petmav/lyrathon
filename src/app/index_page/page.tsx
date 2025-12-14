@@ -3,6 +3,10 @@
 import React, { JSX, useMemo, useState } from "react";
 import Link from "next/link";
 import styles from "./index_page.module.css";
+import {
+  Button,
+  CircularProgress,
+} from "@mui/material";
 
 type Role = "applicant" | "recruiter";
 
@@ -231,6 +235,7 @@ function ApplicantHome(): JSX.Element {
 
 
 function RecruiterHome(): JSX.Element {
+  const [loading, setLoading] = useState(false);
   return (
     <>
       {/* Recruiter hero */}
@@ -245,9 +250,11 @@ function RecruiterHome(): JSX.Element {
             </p>
 
             <div className={styles.recruiterCtas}>
-              <a className={styles.button} href="/recruiter/query">
+              <Link href={"/register"}>
+                <button type="submit" className={styles.button}>
                 Query candidates
-              </a>
+                </button>
+              </Link>
             </div>
 
           <aside className={styles.landingCard} aria-label="How matching works">
