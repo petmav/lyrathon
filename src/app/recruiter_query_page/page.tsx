@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import styles from "./recruiter_query_page.module.css";
 import { JSX } from "react/jsx-runtime";
+import Link from "next/link";
 
 type Role = {
     name: string;
@@ -84,6 +85,7 @@ function simpleMatch(query: string): Role[] {
 
 export default function RecruiterQueryPage(): JSX.Element {
     const [input, setInput] = useState("");
+    const [isThinking, setIsThinking] = useState(false);
     const [messages, setMessages] = useState<Msg[]>(() => [
         {
             id: id(),
@@ -121,6 +123,7 @@ export default function RecruiterQueryPage(): JSX.Element {
 
         addMessage("recruiter", trimmed);
         setInput("");
+        setIsThinking(true);
 
         // Replace this block with a real API call later.
         // const matches = simpleMatch(trimmed);
@@ -136,77 +139,103 @@ export default function RecruiterQueryPage(): JSX.Element {
         //             )
         //             .join("\n")}\n\nTip: add must-have skills (e.g., “Next.js, tRPC”) to narrow results.`;
         
-
+        const reply = "🚧 This is a demo page. Connect to your RAG/SQL/vector service to get real candidate matches. 🚧";
         addMessage("assistant", reply);
+        setIsThinking(false);
         scrollToBottom();
     }
 
     return (
         <div className={styles.page}>
             <header className={styles.header}>
-                <div className={styles.headerInner}>
-                    <div>
-                        <h1 className={styles.title}>Recruiter Query</h1>
-                        <p className={styles.subtitle}>Chat-style search for candidate.</p>
+                <div className={`${styles.container} ${styles.headerInner}`}>
+                    <div className={styles.brandRow}>
+                        <div className={styles.brand}>
+                            <span className={styles.brandMark}>L</span>
+                            <span className={styles.brandText}>Linkdr</span>
+                            <span className={styles.eyebrow}>Recruiter Console</span>
+                        </div>
+                        <Link className={styles.back} href="/">
+                            ← Back to home
+                        </Link>
                     </div>
-                    <a className={styles.back} href="/">
-                        ← Home
-                    </a>
                 </div>
             </header>
 
             <main className={styles.main}>
-                <section className={styles.card}>
-                    <div className={styles.quickRow} aria-label="Quick prompts">
-                        {quickPrompts.map((p) => (
-                            <button key={p} className={styles.quick} type="button" onClick={() => handleSend(p)}>
-                                {p}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div ref={listRef} className={styles.chat} role="log" aria-label="Chat">
-                        {messages.map((m) => (
-                            <div
-                                key={m.id}
-                                className={`${styles.msgRow} ${m.role === "recruiter" ? styles.right : styles.left}`}
-                            >
-                                <div className={`${styles.msg} ${m.role === "recruiter" ? styles.user : styles.bot}`}>
-                                    {m.text.split("\n").map((line, idx) => (
-                                        <p key={idx} className={styles.line}>
-                                            {line}
-                                        </p>
+                <div className={styles.container}>
+                    <section className={styles.chatShell}>
+                        <div className={styles.chatTop}>
+                            <div>
+                                <p className={styles.muted}>Describe the role, skills, location, visa, and salary constraints.</p>
+                                <div className={styles.quickRow} aria-label="Quick prompts">
+                                    {quickPrompts.map((p) => (
+                                        <button key={p} className={styles.quick} type="button" onClick={() => handleSend(p)}>
+                                            {p}
+                                        </button>
                                     ))}
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        </div>
 
-                    <form
-                        className={styles.composer}
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            handleSend(input);
-                        }}
-                    >
-                        <textarea
-                            className={styles.input}
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            placeholder='Try: "backend engineer, Sydney, Node, Postgres, AWS, 3+ years"'
-                            rows={2}
-                        />
-                        <button className={styles.send} type="submit">
-                            Send
-                        </button>
-                    </form>
-
-                    <p className={styles.note}>
-                        This page uses a tiny in-memory dataset. Next step is wiring the “send” action to your backend (RAG/SQL/vector
-                        search) and returning real candidate matches.
-                    </p>
-                </section>
+                        <div ref={listRef} className={styles.chatWindow} role="log" aria-label="Chat">
+                            {messages.map((m) => (
+                                <div
+                                    key={m.id}
+                                    className={`${styles.msgRow} ${m.role === "recruiter" ? styles.right : styles.left}`}
+                                >
+                                    <div className={`${styles.msg} ${m.role === "recruiter" ? styles.user : styles.bot}`}>
+                                        {m.text.split("\n").map((line, idx) => (
+                                            <p key={idx} className={styles.line}>
+                                                {line}
+                                            </p>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                            {isThinking && (
+                                <div className={`${styles.msgRow} ${styles.left}`}>
+                                    <div className={`${styles.msg} ${styles.bot}`}>
+                                        <p className={`${styles.line} ${styles.thinking}`}>Thinking…</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                </div>
             </main>
+
+            <div className={styles.container}>
+                <form
+                    className={styles.composerBar}
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSend(input);
+                    }}
+                >
+                    <textarea
+                        className={styles.input}
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSend(input);
+                            }
+                        }}
+                        placeholder='Try: "backend engineer, Sydney, Node, Postgres, AWS, 3+ years"'
+                        rows={2}
+                    />
+                    <button
+                        className={styles.sendBtn}
+                        type="submit"
+                        aria-label="Send query"
+                        disabled={isThinking}
+                    >
+                        <span className={isThinking ? styles.spinner : ""}>→</span>
+                    </button>
+                </form>
+            </div>
         </div>
     );
 }

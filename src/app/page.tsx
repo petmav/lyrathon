@@ -172,10 +172,10 @@ export default function HomePage() {
                   <li>Privacy-first: revoke or update anytime</li>
                 </ul>
                 <div className="card-actions">
-                  <Link className="btn primary" href="/applicant/apply">
+                  <Link className="btn primary" href="/register">
                     Submit profile
                   </Link>
-                  <Link className="btn text" href="/applicant/status">
+                  <Link className="btn text" href="/">
                     Check status →
                   </Link>
                 </div>
