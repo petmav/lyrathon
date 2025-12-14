@@ -6,11 +6,14 @@ import type {
 } from '@/lib/candidate-search';
 import {
   shortlistResultSchema,
+  SHORTLIST_MAX_RESULTS,
   type ShortlistCorePayload,
 } from '@/lib/schemas';
 
 const SHORTLIST_MODEL =
-  process.env.OPENAI_SHORTLIST_MODEL ?? process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+  process.env.OPENAI_SHORTLIST_MODEL ?? process.env.OPENAI_MODEL ?? 'gpt-5-mini';
+
+const DEFAULT_SHORTLIST_LIMIT = 5;
 
 const shortlistClient = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -29,7 +32,7 @@ const shortlistJsonSchema = {
     shortlist: {
       type: 'array',
       minItems: 0,
-      maxItems: 5,
+      maxItems: SHORTLIST_MAX_RESULTS,
       items: {
         type: 'object',
         additionalProperties: false,
@@ -72,7 +75,11 @@ export async function createShortlist(
   filters: CandidateFilters,
   client: OpenAI | null = shortlistClient,
 ): Promise<Omit<ShortlistPayload, 'filters'>> {
-  const limitedCandidates = candidates.slice(0, filters.limit ?? 5);
+  const shortlistLimit = Math.min(
+    Math.max(filters.limit ?? DEFAULT_SHORTLIST_LIMIT, 1),
+    SHORTLIST_MAX_RESULTS,
+  );
+  const limitedCandidates = candidates.slice(0, shortlistLimit);
 
   if (!client || !limitedCandidates.length) {
     return {
@@ -98,7 +105,7 @@ export async function createShortlist(
         content: [
           {
             type: 'input_text',
-            text: buildPrompt(recruiterQuery, limitedCandidates),
+            text: buildPrompt(recruiterQuery, limitedCandidates, shortlistLimit),
           },
         ],
       },
@@ -149,7 +156,7 @@ function buildFallbackShortlist(candidates: CandidateResult[]): ShortlistEntry[]
   }));
 }
 
-function buildPrompt(query: string, candidates: CandidateResult[]) {
+function buildPrompt(query: string, candidates: CandidateResult[], limit: number) {
   const lines = [
     `Recruiter query: ${query}`,
     '',
@@ -169,7 +176,7 @@ function buildPrompt(query: string, candidates: CandidateResult[]) {
   }
 
   lines.push(
-    'Return up to five candidates with confidence scores, action items, and an overall summary. Each shortlist entry must include candidate_id, name, age, email, location, visa_status, experience_years, salary_expectation, match_summary, recommended_action, and confidence.',
+    `Return up to ${limit} candidates with confidence scores, detailed reasoning, action items, and an overall summary. Each shortlist entry must include candidate_id, name, age, email, location, visa_status, experience_years, salary_expectation, match_summary, recommended_action, and confidence.`,
   );
   return lines.filter(Boolean).join('\n');
 }
