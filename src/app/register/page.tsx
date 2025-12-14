@@ -45,7 +45,7 @@ export default function RegisterPage() {
       console.log(data);
 
       // On success, redirect to login
-      router.push("/login");
+      router.push("/applicant");
     } catch (err) {
       setError("Network error");
     } finally {

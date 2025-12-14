@@ -194,6 +194,7 @@ export default function ApplicantFormPage(): JSX.Element {
   const router = useRouter();
   const handleLogout = (): void => {
     router.push('/');
+    localStorage.removeItem("candidate_id");
     console.log("Logged out");
   };
 
