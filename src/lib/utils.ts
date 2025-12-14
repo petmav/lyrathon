@@ -44,3 +44,26 @@ export const ragUtils = {
     throw new Error('RAG pipeline not yet implemented');
   },
 };
+export const apiCall = (path: string, method: string, data = {}) => {
+  return new Promise((resolve, reject) => {
+    let url = path;
+    if (method === 'GET' && Object.keys(data).length !== 0) {
+      url += `?${new URLSearchParams(data).toString()}`;
+    }
+    fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: method !== 'GET' ? JSON.stringify(data) : undefined,
+    }).then((response) => {
+      if (response.status === 200) {
+        response.json().then(resolve);
+      } else if (response.status === 403 || response.status === 400) {
+        response.json().then(reject);
+      } else {
+        reject(response);
+      }
+    })
+  })
+}
