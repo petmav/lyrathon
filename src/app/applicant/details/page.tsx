@@ -17,6 +17,7 @@ import {
   DialogActions,
   TextField,
 } from "@mui/material";
+import { useRouter } from "next/navigation";
 
 export default function ApplicationDetailsPage() {
   const [application, setApplication] = useState({
@@ -36,8 +37,9 @@ export default function ApplicationDetailsPage() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState(application);
-
+  const router = useRouter();
   const handleLogout = () => {
+    router.push('/');
     console.log("Logged out");
   };
 

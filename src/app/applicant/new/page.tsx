@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { apiCall } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 /* =======================
    Types
@@ -71,8 +72,9 @@ export default function ApplicantFormPage(): JSX.Element {
 
   const [previousPositions, setPreviousPositions] = useState<PreviousPosition[]>([]);
   const [education, setEducation] = useState<EducationEntry[]>([]);
-
+  const router = useRouter();
   const handleLogout = (): void => {
+    router.push('/');
     console.log("Logged out");
   };
 
@@ -98,7 +100,10 @@ export default function ApplicantFormPage(): JSX.Element {
     };
 
     apiCall("/api/candidates/register", "POST", formData)
-      .then((res) => console.log(res))
+      .then((res) => {
+        router.push('/applicant/details');
+        console.log(res)
+        })
       .catch((err) => console.log(err));
   };
 
