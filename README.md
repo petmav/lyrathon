@@ -106,7 +106,7 @@ The route applies the keyword match as the only hard filter, boosts candidates w
 
 ### `/api/query`
 
-Turns natural-language recruiter prompts into structured filters via OpenAI before executing the search. Request bodies must match `{"query": string, "limit"?: number<=100}`. The endpoint sanitizes LLM output back through the same filter schema to ensure only valid data is used:
+Turns natural-language recruiter prompts into structured filters via OpenAI before executing the search. Request bodies must match `{"query": string, "limit"?: number<=100}`. The endpoint sanitizes LLM output back through the same filter schema to ensure only valid data is used. If `limit` is provided, it also guides shortlist sizing downstream (default 5, capped at 10):
 
 ```bash
 curl -X POST http://localhost:3000/api/query \
@@ -121,7 +121,7 @@ Response includes the inferred filters plus the shortlisted candidates. If `OPEN
 
 ### `/api/query/shortlist`
 
-Complete recruiter flow: parse intent → apply filters → retrieve semantic matches → generate an LLM-powered shortlist with recommendations. Request schema mirrors `/api/query` and responses adhere to `shortlistResponseSchema`. When the LLM fails or returns invalid JSON, the API falls back to a deterministic shortlist derived from SQL results so the schema is still satisfied.
+Complete recruiter flow: parse intent → apply filters → retrieve semantic matches → generate an LLM-powered shortlist with recommendations. Request schema mirrors `/api/query` and responses adhere to `shortlistResponseSchema`. `limit` (default 5, capped at 10) controls how many candidates the LLM is asked to return. When the LLM fails or returns invalid JSON, the API falls back to a deterministic shortlist derived from SQL results so the schema is still satisfied.
 
 ```bash
 curl -X POST http://localhost:3000/api/query/shortlist \
