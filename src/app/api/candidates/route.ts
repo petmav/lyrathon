@@ -59,43 +59,42 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-    try {
-        const { searchParams } = new URL(request.url);
+  try {
+    const { searchParams } = new URL(request.url);
+    const candidate_id = searchParams.get('candidate_id');
 
-        const payload = { candidate_id: searchParams.get('candidate_id') };
-
-        const candidateIdSchema = z.object({ candidate_id: z.string().uuid() });
-        const { candidate_id } = parseRequestPayload(candidateIdSchema, payload);
-
-        const result = await db.query(
-          `
-          SELECT
-            name,
-            email,
-            age,
-            current_position,
-            location,
-            visa_status,
-            experience_years,
-            salary_expectation,
-            availability_date,
-            skills_text,
-            awards_text,
-            certifications_text,
-            projects_text,
-            previous_positions,
-            education
-          FROM candidate WHERE candidate_id = $1
-          `,
-          [candidate_id],
-        );
-
-        const row = (result as any).rows?.[0] ?? null;
-        return NextResponse.json({ data: row });
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Failed to retrieve candidates' },
-        { status: 500 },
-      );
+    if (!candidate_id) {
+      return NextResponse.json({ error: 'candidate_id is required' }, { status: 400 });
     }
+
+    const result = await db.query(
+      `
+      SELECT
+        name,
+        email,
+        age,
+        current_position,
+        location,
+        visa_status,
+        experience_years,
+        salary_expectation,
+        availability_date,
+        skills_text,
+        awards_text,
+        certifications_text,
+        projects_text,
+        previous_positions,
+        education
+      FROM candidate
+      WHERE candidate_id = $1
+      `,
+      [candidate_id],
+    );
+
+    const row = (result as any).rows?.[0] ?? null;
+    return NextResponse.json({ data: row });
+  } catch (error) {
+    console.error('Failed to retrieve candidate', error);
+    return NextResponse.json({ error: 'Failed to retrieve candidate' }, { status: 500 });
+  }
 }
