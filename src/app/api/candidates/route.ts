@@ -12,6 +12,7 @@ import {
   parseRequestPayload,
 } from '@/lib/validation';
 import { db } from '@/lib/db'
+import { z } from 'zod';
 
 export async function POST(request: Request) {
   try {
