@@ -58,7 +58,13 @@ export default function RegisterPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "grey.100",
+        background: `conic-gradient(from 0deg,
+    rgba(124,58,237,0) 0 20%,
+    rgba(124,58,237,1) 35%,
+    rgba(56,189,248,1) 50%,
+    rgba(34,197,94,1) 65%,
+    rgba(124,58,237,0) 80% 100%
+  )`,
         p: 2,
       }}
     >

@@ -245,9 +245,9 @@ function RecruiterHome(): JSX.Element {
             </p>
 
             <div className={styles.recruiterCtas}>
-              <a className={styles.button} href="/recruiter/query">
+              <a className={styles.button} href="/register">
                 Query candidates
-              </a>
+              </a> 
             </div>
 
           <aside className={styles.landingCard} aria-label="How matching works">
