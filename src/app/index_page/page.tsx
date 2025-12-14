@@ -1,6 +1,7 @@
 "use client";
 
 import React, { JSX, useMemo, useState } from "react";
+import Link from "next/link";
 import styles from "./index_page.module.css";
 
 type Role = "applicant" | "recruiter";
@@ -23,7 +24,7 @@ type Applicant = {
 };
 
 export default function HomePage(): JSX.Element {
-  const [role, setRole] = useState<Role>("applicant");
+  const [role, setRole] = useState<Role>("recruiter");
 
   const featuredJobs: Job[] = useMemo(
     () => [
@@ -72,23 +73,23 @@ export default function HomePage(): JSX.Element {
       <header className={styles.header}>
         <div className={styles.container}>
           <div className={styles.headerRow}>
-            <a className={styles.brand} href="/" aria-label="Go to homepage">
+            <Link className={styles.brand} href="/" aria-label="Go to homepage">
               Linkdr
-            </a>
+            </Link>
 
             <nav className={styles.nav} aria-label="Primary">
-              <a className={styles.navLink} href="/jobs">
+              <Link className={styles.navLink} href="/jobs">
                 Jobs
-              </a>
-              <a className={styles.navLink} href="/applications">
+              </Link>
+              <Link className={styles.navLink} href="/applications">
                 Applications
-              </a>
-              <a className={styles.navLink} href="/companies">
+              </Link>
+              <Link className={styles.navLink} href="/companies">
                 Companies
-              </a>
-              <a className={styles.navLinkStrong} href="/login">
+              </Link>
+              <Link className={styles.navLinkStrong} href="/login">
                 Sign in
-              </a>
+              </Link>
             </nav>
           </div>
         </div>
@@ -100,23 +101,18 @@ export default function HomePage(): JSX.Element {
           <div className={styles.landingInner}>
             <div>
               <h1 id="landing-title" className={styles.landingTitle}>
-                  applicants ↔ recruiters, without the noise. 
+                {/*applicants ↔ recruiters, we find talent tailored to your needs*/}
+                AI designed to connect, powered by talent
               </h1>
+              <h1 id="landing-title" className={styles.landingTitle}>
+                cut the noise, simply <span className={styles.accent}> linkdr</span>.
+              </h1>
+
               <p className={styles.landingSubtitle}>
-                where AI and talent meet.
+                {/*where AI and talent meet.*/}
+                The future of recruitment screens credibility, skip the resume and stay ahead.
               </p>
 
-              <div className={styles.landingCtas}>
-                <a className={styles.button} href="/signup">Create an account</a>
-                <a className={styles.ghostBtnWide} href="/jobs">Browse jobs</a>
-              </div>
-
-              <div className={styles.pills} aria-label="Highlights">
-                <span className={styles.pill}>One profile</span>
-                <span className={styles.pill}>Fast apply</span>
-                <span className={styles.pill}>Pipeline tracking</span>
-                <span className={styles.pill}>Verified companies</span>
-              </div>
             </div>
 
             <aside className={styles.landingCard} aria-label="At a glance">
@@ -134,7 +130,10 @@ export default function HomePage(): JSX.Element {
               </div>
             </aside>
           </div>
+          <div className={styles.heroImage} aria-hidden="true" />
         </section>
+
+
 
         {/* 2) Toggle AFTER the shared block */}
         <section className={styles.toggleSection} aria-label="Choose view">
@@ -144,9 +143,9 @@ export default function HomePage(): JSX.Element {
 
         {/* 3) Role-specific content */}
         {role === "applicant" ? (
-          <ApplicantHome featuredJobs={featuredJobs} />
+          <ApplicantHome />
         ) : (
-          <RecruiterHome applicants={sampleApplicants} />
+          <RecruiterHome />
         )}
       </main>
 
@@ -186,221 +185,166 @@ function RoleToggle({
     <div className={styles.roleToggle} role="group" aria-label="Switch view">
       <button
         type="button"
-        className={`${styles.roleBtn} ${role === "applicant" ? styles.roleBtnActive : ""}`}
-        aria-pressed={role === "applicant"}
-        onClick={() => setRole("applicant")}
-      >
-        Applicant
-      </button>
-      <button
-        type="button"
         className={`${styles.roleBtn} ${role === "recruiter" ? styles.roleBtnActive : ""}`}
         aria-pressed={role === "recruiter"}
         onClick={() => setRole("recruiter")}
       >
         Recruiter
       </button>
+      <button
+        type="button"
+        className={`${styles.roleBtn} ${role === "applicant" ? styles.roleBtnActive : ""}`}
+        aria-pressed={role === "applicant"}
+        onClick={() => setRole("applicant")}
+      >
+        Applicant
+      </button>
     </div>
   );
 }
 
-function ApplicantHome({ featuredJobs }: { featuredJobs: Job[] }): JSX.Element {
+function ApplicantHome(): JSX.Element {
+  return (
+    <section className={styles.section} aria-labelledby="applicant-title">
+      <div className={styles.sectionHeader}>
+        <h2 id="applicant-title" className={styles.sectionTitle}>Applicant</h2>
+      </div>
+
+      <div className={styles.card}>
+        <h3 className={styles.cardTitle}>Create your candidate profile</h3>
+        <p className={styles.cardSub}>
+          Submit your details once. Recruiters match you based on capability signals (skills, projects, tests), not just credentials.
+        </p>
+
+        <div className={styles.cardActions}>
+          <a className={styles.primaryBtn} href="/applicant/apply">
+            Submit my profile
+          </a>
+          <a className={styles.ghostBtn} href="/applicant/status">
+            Check status
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+function RecruiterHome(): JSX.Element {
   return (
     <>
-      <section className={styles.hero} aria-labelledby="hero-title">
-        <div className={styles.heroInner}>
+      {/* Recruiter hero */}
+      <section className={styles.recruiterHero} aria-labelledby="recruiter-hero-title">
+        <div className={styles.recruiterHeroInner}>
           <div>
-            <h1 id="hero-title" className={styles.heroTitle}>
-              Find jobs. Apply fast. Track everything.
-            </h1>
-            <p className={styles.heroSubtitle}>
-              One profile. One dashboard. Less copying and pasting.
+            <h2 id="recruiter-hero-title" className={styles.heroTitle}>
+              Find the best talent by capability, not just credentials.
+            </h2>
+            <p>
+              Describe the role in plain English. We match candidates using real signals: skills, projects, tests, and proven outcomes.
             </p>
 
-            <form className={styles.search} action="/jobs" method="GET">
-              <label className={styles.srOnly} htmlFor="q">
-                Job title or keyword
-              </label>
-              <input
-                id="q"
-                name="q"
-                className={styles.input}
-                placeholder="Role or keyword (e.g. frontend, analyst)"
-                autoComplete="off"
-              />
+            <div className={styles.recruiterCtas}>
+              <a className={styles.button} href="/recruiter/query">
+                Query candidates
+              </a>
+            </div>
 
-              <label className={styles.srOnly} htmlFor="loc">
-                Location
-              </label>
-              <input
-                id="loc"
-                name="loc"
-                className={styles.input}
-                placeholder="Location (optional)"
-                autoComplete="off"
-              />
-
-              <button className={styles.button} type="submit">
-                Search jobs
-              </button>
-            </form>
-
-            <div className={styles.pills} aria-label="Highlights">
-              <span className={styles.pill}>One-click apply</span>
-              <span className={styles.pill}>Saved jobs</span>
-              <span className={styles.pill}>Application tracker</span>
+            <div className={styles.pills} aria-label="Recruiter highlights">
+              <span className={styles.pill}>Capability matching</span>
+              <span className={styles.pill}>Explainable results</span>
+              <span className={styles.pill}>Pipeline-ready</span>
+              <span className={styles.pill}>Bias-aware signals</span>
             </div>
           </div>
 
-          <aside className={styles.sideCard} aria-label="Tracker preview">
-            <h2 className={styles.sideTitle}>Your tracker</h2>
-            <div className={styles.stats}>
-              <Stat label="Drafts" value="2" />
-              <Stat label="Applied" value="7" />
-              <Stat label="Interview" value="1" />
-              <Stat label="Offer" value="0" />
+          {/* Right card: “How the matching works” */}
+          <aside className={styles.landingCard} aria-label="How matching works">
+            <h3 className={styles.landingCardTitle}>How matching works</h3>
+
+            <div className={styles.kpi}>
+              <div className={styles.kpiNum}>1</div>
+              <div className={styles.kpiLabel}>Recruiter query → intent + must-haves</div>
             </div>
-            <a className={styles.secondaryLink} href="/applications">
-              Open tracker →
-            </a>
+            <div className={styles.kpi}>
+              <div className={styles.kpiNum}>2</div>
+              <div className={styles.kpiLabel}>Score by capability signals</div>
+            </div>
+            <div className={styles.kpi}>
+              <div className={styles.kpiNum}>3</div>
+              <div className={styles.kpiLabel}>Rank + explain “why”</div>
+            </div>
           </aside>
         </div>
       </section>
 
-      <section className={styles.section} aria-labelledby="featured-title">
+      {/* Main recruiter section */}
+      <section className={styles.section} aria-labelledby="recruiter-tools">
         <div className={styles.sectionHeader}>
-          <h2 id="featured-title" className={styles.sectionTitle}>
-            Featured jobs
+          <h2 id="recruiter-tools" className={styles.sectionTitle}>
+            Recruiter tools
           </h2>
-          <a className={styles.sectionLink} href="/jobs">
-            View all →
+          <a className={styles.sectionLink} href="/recruiter/dashboard">
+            Open dashboard →
           </a>
         </div>
 
         <div className={styles.grid}>
-          {featuredJobs.map((job) => (
-            <article key={job.id} className={styles.card}>
-              <div className={styles.cardTop}>
-                <div>
-                  <h3 className={styles.cardTitle}>{job.title}</h3>
-                  <p className={styles.cardSub}>
-                    {job.company} • {job.location}
-                  </p>
-                </div>
-                <span className={styles.badge}>{job.type}</span>
-              </div>
-
-              <p className={styles.cardMeta}>
-                {job.salary ? <span>{job.salary}</span> : <span>&nbsp;</span>}
-              </p>
-
-              <ul className={styles.tags} aria-label="Tags">
-                {job.tags.map((t) => (
-                  <li key={t} className={styles.tag}>
-                    {t}
-                  </li>
-                ))}
-              </ul>
-
-              <div className={styles.cardActions}>
-                <a className={styles.primaryBtn} href={`/jobs/${job.id}`}>
-                  View role
-                </a>
-                <a className={styles.ghostBtn} href={`/jobs/${job.id}?save=1`}>
-                  Save
-                </a>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-    </>
-  );
-}
-
-function RecruiterHome({ applicants }: { applicants: Applicant[] }): JSX.Element {
-  return (
-    <>
-      <section className={styles.hero} aria-labelledby="recruiter-title">
-        <div className={styles.heroInner}>
-          <div>
-            <h1 id="recruiter-title" className={styles.heroTitle}>
-              Post roles and manage applicants in one place.
-            </h1>
-            <p className={styles.heroSubtitle}>
-              Create listings, review candidates, and move them through your pipeline.
+          <article className={styles.card}>
+            <h3 className={styles.cardTitle}>Chat query</h3>
+            <p className={styles.cardSub}>
+              “Frontend engineer, Sydney, React + TS, 2–4 years, available ASAP.”
             </p>
-
-            <div className={styles.ctaRow}>
-              <a className={styles.button} href="/recruiter/post">
-                Post a job
-              </a>
-              <a className={styles.ghostBtnWide} href="/recruiter/dashboard">
-                Open dashboard
-              </a>
-            </div>
-
-            <div className={styles.pills} aria-label="Recruiter features">
-              <span className={styles.pill}>Pipeline stages</span>
-              <span className={styles.pill}>Candidate notes</span>
-              <span className={styles.pill}>Messaging</span>
-            </div>
-          </div>
-
-          <aside className={styles.sideCard} aria-label="Applicants preview">
-            <h2 className={styles.sideTitle}>Recent applicants</h2>
-            <ul className={styles.appList}>
-              {applicants.map((a) => (
-                <li key={a.id} className={styles.appRow}>
-                  <div>
-                    <div className={styles.appName}>{a.name}</div>
-                    <div className={styles.appRole}>{a.role}</div>
-                  </div>
-                  <span className={styles.stage}>{a.stage}</span>
-                </li>
-              ))}
-            </ul>
-            <a className={styles.secondaryLink} href="/recruiter/applicants">
-              View all applicants →
+            <a className={styles.primaryBtn} href="/recruiter/query">
+              Start querying
             </a>
-          </aside>
+          </article>
+
+          <article className={styles.card}>
+            <h3 className={styles.cardTitle}>Pipeline</h3>
+            <p className={styles.cardSub}>
+              Move candidates through stages with notes, tags, and decisions.
+            </p>
+            <a className={styles.primaryBtn} href="/recruiter/dashboard">
+              View pipeline
+            </a>
+          </article>
+
+          <article className={styles.card}>
+            <h3 className={styles.cardTitle}>Role templates</h3>
+            <p className={styles.cardSub}>
+              Save must-haves, nice-to-haves, and evaluation criteria per role.
+            </p>
+            <a className={styles.primaryBtn} href="/recruiter/templates">
+              Create template
+            </a>
+          </article>
         </div>
       </section>
 
-      <section className={styles.section} aria-labelledby="quick-title">
-        <h2 id="quick-title" className={styles.sectionTitle}>
-          Quick actions
-        </h2>
+      {/* Capability signals section */}
+      <section className={styles.section} aria-labelledby="signals-title">
+        <h2 id="signals-title" className={styles.sectionTitle}>Signals we care about</h2>
 
-        <div className={styles.grid}>
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Create a job post</h3>
-            <p className={styles.cardSub}>Role title, location, pay range, and requirements.</p>
-            <a className={styles.primaryBtn} href="/recruiter/post">
-              Start posting
-            </a>
+        <div className={styles.signalGrid}>
+          <div className={styles.signalCard}>
+            <h3 className={styles.cardTitle}>Skills that show up in work</h3>
+            <p className={styles.cardSub}>Code, projects, contributions, and impact — not keyword stuffing.</p>
           </div>
-
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Review pipeline</h3>
-            <p className={styles.cardSub}>Move candidates: New → Shortlisted → Interview → Offer.</p>
-            <a className={styles.primaryBtn} href="/recruiter/dashboard">
-              Open pipeline
-            </a>
+          <div className={styles.signalCard}>
+            <h3 className={styles.cardTitle}>Role-fit evidence</h3>
+            <p className={styles.cardSub}>Similar tasks, tools, environments, and outcomes.</p>
           </div>
-
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Company profile</h3>
-            <p className={styles.cardSub}>Add your logo, description, and hiring links.</p>
-            <a className={styles.primaryBtn} href="/recruiter/company">
-              Edit profile
-            </a>
+          <div className={styles.signalCard}>
+            <h3 className={styles.cardTitle}>Assessment-ready</h3>
+            <p className={styles.cardSub}>Optional tests and structured evaluation criteria per role.</p>
           </div>
         </div>
       </section>
     </>
   );
 }
+
 
 function Stat({ label, value }: { label: string; value: string }): JSX.Element {
   return (

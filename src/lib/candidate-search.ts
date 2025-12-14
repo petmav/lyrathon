@@ -29,6 +29,13 @@ export type CandidateResult = {
   preference_score?: number;
 };
 
+export function tokenizeSearchTerm(term: string) {
+  return term
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
 export async function searchCandidates(
   filters: CandidateFilters = {},
   semanticEmbedding?: number[] | null,
@@ -38,10 +45,7 @@ export async function searchCandidates(
   const scoreParts: string[] = [];
 
   if (filters.searchTerm?.trim()) {
-    const tokens = filters.searchTerm
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
+    const tokens = tokenizeSearchTerm(filters.searchTerm);
 
     const tokenClauses: string[] = [];
     tokens.forEach((term) => {
@@ -53,7 +57,7 @@ export async function searchCandidates(
     });
 
     if (tokenClauses.length) {
-      clauses.push(`(${tokenClauses.join(' AND ')})`);
+      clauses.push(`(${tokenClauses.join(' OR ')})`);
     }
   }
 

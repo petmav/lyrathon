@@ -4,6 +4,12 @@
   margin: 0;
 }
 
+:root {
+  --accent: #B8DB80;
+  --accent-2: #FFE4EF;
+  --accent-3: #fffca3;
+
+}
 html,
 body {
   height: 100%;
