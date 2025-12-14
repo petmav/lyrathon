@@ -36,7 +36,9 @@ export async function POST(request: Request) {
       password_hash?: string;
     };
 
-    const normalizedCandidate = normalizeCandidateDates(safeCandidate);
+    const normalizedCandidate = normalizeCandidateTypes(
+      normalizeCandidateDates(safeCandidate),
+    );
 
     const responseBody = enforceResponseShape(
       candidateRegistrationResponseSchema,
@@ -91,4 +93,27 @@ function normalizeCandidateDates<T extends CandidateDateFields>(candidate: T): T
     profile_created_at: normalizeDateField(candidate.profile_created_at),
     profile_updated_at: normalizeDateField(candidate.profile_updated_at),
   };
+}
+
+function normalizeCandidateTypes<T extends Record<string, unknown>>(candidate: T): T {
+  const coerceNumber = (value: unknown) => {
+    if (value === null || value === undefined) return value;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed === '') return value;
+      const n = Number(trimmed);
+      return Number.isNaN(n) ? value : n;
+    }
+    return value;
+  };
+
+  return {
+    ...candidate,
+    age: coerceNumber(candidate['age']),
+    experience_years: coerceNumber(candidate['experience_years']),
+    salary_expectation: coerceNumber(candidate['salary_expectation']),
+    // preference_score may not exist on registration response, but coerce if present
+    preference_score: coerceNumber(candidate['preference_score']),
+  } as T;
 }
