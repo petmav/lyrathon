@@ -346,7 +346,10 @@ export default function RecruiterQueryPage(): JSX.Element {
                                             key={m.id}
                                             className={`${styles.msgRow} ${m.role === "recruiter" ? styles.right : styles.left}`}
                                         >
-                                            <div className={`${styles.msg} ${m.role === "recruiter" ? styles.user : styles.bot}`}>
+                                            <div
+                                                className={`${styles.msg} ${m.role === "recruiter" ? styles.user : styles.bot}`}
+                                                data-avatar={m.role === "recruiter" ? "R" : "AI"}
+                                            >
                                                 {m.role === "assistant" ? (
                                                     <p className={styles.line}>{typedText[m.id] ?? ""}</p>
                                                 ) : (
@@ -363,6 +366,7 @@ export default function RecruiterQueryPage(): JSX.Element {
 
                                 return (
                                     <div key={item.id} className={styles.shortlistBlock}>
+                                        <div className={styles.msgHeader} />
                                         <div className={styles.resultsHeader}>
                                             <h2 className={styles.sectionTitle}>Shortlist</h2>
                                             <p className={styles.muted}>
