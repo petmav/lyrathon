@@ -64,7 +64,6 @@ export const candidateInputSchema = z
     name: nonEmptyString,
     email: z.string().email(),
     age: z.number().int().min(16),
-    password_hash: z.string().min(8),
     current_position: optionalNonEmptyString,
     location: optionalNonEmptyString,
     visa_status: optionalNonEmptyString,

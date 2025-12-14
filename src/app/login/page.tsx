@@ -30,6 +30,7 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+      
 
       const data = await res.json();
       if (!res.ok) {
@@ -37,9 +38,11 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
+      localStorage.setItem("candidate_id", data.candidate_id);
+      console.log(data);
 
       // on success redirect to home (or wherever you want)
-      router.push("/");
+      router.push("/applicant");
     } catch (err) {
       setError("Network error");
     } finally {
