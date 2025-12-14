@@ -38,7 +38,17 @@ export const educationEntrySchema = z
   .object({
     degree: optionalNonEmptyString,
     school: optionalNonEmptyString,
-    graduation_year: z.number().int().min(1900).max(2100).optional(),
+    graduation_year: z
+      .preprocess(
+        (value) => {
+          if (typeof value === 'string') {
+            const parsed = Number(value);
+            return Number.isNaN(parsed) ? value : parsed;
+          }
+          return value;
+        },
+        z.number().int().min(1900).max(2100).optional(),
+      ),
   })
   .strict();
 
