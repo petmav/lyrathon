@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import {
   Box,
   Button,
@@ -10,21 +10,41 @@ import {
   CircularProgress,
 } from "@mui/material";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
 
-    // Simulate API call
-    await new Promise((res) => setTimeout(res, 1000));
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    console.log({ email, password });
-    setLoading(false);
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error ?? "Login failed");
+        setLoading(false);
+        return;
+      }
+
+      // on success redirect to home (or wherever you want)
+      router.push("/");
+    } catch (err) {
+      setError("Network error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -85,6 +105,12 @@ export default function LoginPage() {
             {loading ? <CircularProgress size={24} /> : "Sign in"}
           </Button>
         </Box>
+
+        {error && (
+          <Typography variant="body2" color="error" align="center" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
 
         <Typography
           variant="body2"

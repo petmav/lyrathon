@@ -12,6 +12,30 @@ export type CandidateFilters = {
   limit?: number;
 };
 
+export type CandidateResult = {
+  candidate_id: string;
+  name: string;
+  age: number | null;
+  email: string;
+  current_position: string | null;
+  location: string | null;
+  visa_status: string | null;
+  experience_years: number | null;
+  salary_expectation: number | null;
+  availability_date: string | null;
+  skills_text: string | null;
+  projects_text: string | null;
+  profile_updated_at: string;
+  preference_score?: number;
+};
+
+export function tokenizeSearchTerm(term: string) {
+  return term
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
 export async function searchCandidates(
   filters: CandidateFilters = {},
   semanticEmbedding?: number[] | null,
@@ -21,11 +45,20 @@ export async function searchCandidates(
   const scoreParts: string[] = [];
 
   if (filters.searchTerm?.trim()) {
-    values.push(`%${filters.searchTerm.trim()}%`);
-    const idx = values.length;
-    clauses.push(
-      `(skills_text ILIKE $${idx} OR projects_text ILIKE $${idx} OR current_position ILIKE $${idx})`,
-    );
+    const tokens = tokenizeSearchTerm(filters.searchTerm);
+
+    const tokenClauses: string[] = [];
+    tokens.forEach((term) => {
+      values.push(`%${term}%`);
+      const idx = values.length;
+      tokenClauses.push(
+        `(skills_text ILIKE $${idx} OR projects_text ILIKE $${idx} OR current_position ILIKE $${idx})`,
+      );
+    });
+
+    if (tokenClauses.length) {
+      clauses.push(`(${tokenClauses.join(' OR ')})`);
+    }
   }
 
   applyLocationScoring(filters.location, values, scoreParts);
@@ -60,6 +93,8 @@ export async function searchCandidates(
     SELECT
       candidate.candidate_id,
       candidate.name,
+      candidate.age,
+      candidate.email,
       candidate.current_position,
       candidate.location,
       candidate.visa_status,
@@ -78,7 +113,7 @@ export async function searchCandidates(
   `;
 
   const result = await pool.query(query, values);
-  return result.rows;
+  return result.rows as CandidateResult[];
 }
 
 const COUNTRY_ALIASES: Record<string, string[]> = {

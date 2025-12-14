@@ -13,22 +13,27 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.0",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
     "next": "^15.1.0",
     "openai": "^6.10.0",
     "pg": "^8.16.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^22",
+    "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "^15.1.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
     "typescript": "^5"
   }
 }

@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { extractFiltersFromQuery } from '@/lib/query-parser';
 import { searchCandidates } from '@/lib/candidate-search';
 import { generateEmbedding } from '@/lib/embeddings';
+import { createShortlist } from '@/lib/shortlist';
 import { logEvent } from '@/lib/logger';
 import {
   candidateFiltersSchema,
   recruiterQueryRequestSchema,
-  recruiterQueryResponseSchema,
+  shortlistResponseSchema,
 } from '@/lib/schemas';
 import {
   enforceResponseShape,
@@ -31,16 +32,30 @@ export async function POST(request: Request) {
 
     const queryEmbedding = await generateEmbedding(body.query);
     const candidates = await searchCandidates(sanitizedFilters, queryEmbedding);
-    const payload = enforceResponseShape(recruiterQueryResponseSchema, {
+
+    if (!candidates.length) {
+      const emptyResponse = enforceResponseShape(shortlistResponseSchema, {
+        filters: sanitizedFilters,
+        shortlist: [],
+        overall_summary: 'No candidates matched the recruiter query.',
+      });
+      return NextResponse.json(emptyResponse);
+    }
+
+    const shortlist = await createShortlist(body.query, candidates, sanitizedFilters);
+
+    const responseBody = enforceResponseShape(shortlistResponseSchema, {
       filters: sanitizedFilters,
-      data: candidates,
+      ...shortlist,
     });
-    await logEvent('info', 'recruiter.query.success', {
+
+    await logEvent('info', 'recruiter.shortlist.success', {
       filters: sanitizedFilters,
-      results: candidates.length,
       duration_ms: Date.now() - started,
+      shortlist_size: shortlist.shortlist.length,
     });
-    return NextResponse.json(payload);
+
+    return NextResponse.json(responseBody);
   } catch (error) {
     if (isRequestValidationError(error)) {
       return NextResponse.json(
@@ -49,19 +64,19 @@ export async function POST(request: Request) {
       );
     }
     if (isResponseValidationError(error)) {
-      console.error('Recruiter query response invalid', error.details);
+      console.error('Shortlist response invalid', error.details);
       return NextResponse.json(
-        { error: 'Failed to format recruiter query response' },
+        { error: 'Failed to format shortlist response' },
         { status: 500 },
       );
     }
 
-    console.error('Query orchestration failed', error);
-    await logEvent('error', 'recruiter.query.error', {
+    console.error('Final shortlist generation failed', error);
+    await logEvent('error', 'recruiter.shortlist.error', {
       message: (error as Error).message,
     });
     return NextResponse.json(
-      { error: 'Failed to process recruiter query' },
+      { error: 'Failed to generate shortlist' },
       { status: 500 },
     );
   }

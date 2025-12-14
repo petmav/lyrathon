@@ -5,6 +5,7 @@ set -eu
 SCRIPT_PATH="$(cd -- "$(dirname -- "$0")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_PATH}/.." && pwd)"
 SEED_FILE="${PROJECT_ROOT}/db/seeds/seed.sql"
+EXTRA_SEED_FILE="${PROJECT_ROOT}/db/seeds/candidates_small.sql"
 POSTGRES_SERVICE="${POSTGRES_SERVICE:-postgres}"
 POSTGRES_USER="${POSTGRES_USER:-lyrathon}"
 POSTGRES_DB="${POSTGRES_DB:-lyrathon}"
@@ -19,13 +20,33 @@ if [ ! -f "${SEED_FILE}" ]; then
   exit 1
 fi
 
-if ! docker compose ps "${POSTGRES_SERVICE}" >/dev/null 2>&1; then
-  echo "PostgreSQL container \"${POSTGRES_SERVICE}\" is not running. Start it with: docker compose up -d ${POSTGRES_SERVICE}"
+if [ ! -f "${EXTRA_SEED_FILE}" ]; then
+  echo "Supplemental candidate seed file not found at ${EXTRA_SEED_FILE}"
   exit 1
 fi
 
-echo "Seeding data from ${SEED_FILE}"
-docker compose exec -T "${POSTGRES_SERVICE}" psql \
+ensure_container_ready() {
+  echo "Starting PostgreSQL container (${POSTGRES_SERVICE}) if needed..."
+  docker compose up -d "${POSTGRES_SERVICE}"
+
+  echo "Waiting for PostgreSQL to accept connections..."
+  attempts=30
+  until docker compose exec -T "${POSTGRES_SERVICE}" pg_isready \
+    -U "${POSTGRES_USER}" \
+    -d "${POSTGRES_DB}" >/dev/null 2>&1; do
+    attempts=$((attempts - 1))
+    if [ "${attempts}" -le 0 ]; then
+      echo "PostgreSQL container did not become ready in time."
+      exit 1
+    fi
+    sleep 2
+  done
+}
+
+ensure_container_ready
+
+echo "Seeding data from ${SEED_FILE} and ${EXTRA_SEED_FILE}"
+cat "${SEED_FILE}" "${EXTRA_SEED_FILE}" | docker compose exec -T "${POSTGRES_SERVICE}" psql \
   -v ON_ERROR_STOP=1 \
   -U "${POSTGRES_USER}" \
-  -d "${POSTGRES_DB}" < "${SEED_FILE}"
+  -d "${POSTGRES_DB}"

@@ -6,10 +6,10 @@ VALUES
 ON CONFLICT (company_id) DO NOTHING;
 
 -- Sample recruiters
-INSERT INTO recruiter (recruiter_id, company_id, name, email, organisation, role_title, notes)
+INSERT INTO recruiter (recruiter_id, company_id, name, email, password_hash, organisation, role_title, notes)
 VALUES
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 'Rue Patel', 'rue@auroralabs.example.com', 'Aurora Labs', 'Lead Talent Partner', 'Focus on payments org hiring.'),
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '22222222-2222-2222-2222-222222222222', 'Marcus Lee', 'marcus@nimbushealth.example.com', 'Nimbus Health', 'Senior Recruiter', 'Owns data + ML roles.')
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 'Rue Patel', 'rue@auroralabs.example.com', '$2a$10$exampleRecruiterRue', 'Aurora Labs', 'Lead Talent Partner', 'Focus on payments org hiring.'),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '22222222-2222-2222-2222-222222222222', 'Marcus Lee', 'marcus@nimbushealth.example.com', '$2a$10$exampleRecruiterMarcus', 'Nimbus Health', 'Senior Recruiter', 'Owns data + ML roles.')
 ON CONFLICT (recruiter_id) DO NOTHING;
 
 -- Sample candidates
@@ -18,6 +18,7 @@ INSERT INTO candidate (
   name,
   age,
   email,
+  password_hash,
   current_position,
   location,
   visa_status,
@@ -36,6 +37,7 @@ INSERT INTO candidate (
   'Tanya Rhodes',
   29,
   'tanya.rhodes@example.com',
+  '$2a$10$exampleCandidateTanya',
   'Senior Frontend Engineer',
   'Remote - Canada',
   'Canadian PR, TN eligible',
@@ -54,6 +56,7 @@ INSERT INTO candidate (
   'Diego Alvarez',
   34,
   'diego.alvarez@example.com',
+  '$2a$10$exampleCandidateDiego',
   'Staff Data Scientist',
   'Mexico City, MX',
   'Open to Canadian LMIA / US H1B transfer',
@@ -72,6 +75,7 @@ INSERT INTO candidate (
   'Mira Shah',
   26,
   'mira.shah@example.com',
+  '$2a$10$exampleCandidateMira',
   'Product Designer',
   'London, UK',
   'UK Skilled Worker Visa',

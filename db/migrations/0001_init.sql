@@ -1,6 +1,7 @@
 -- Core extensions
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "citext";
+CREATE EXTENSION IF NOT EXISTS vector;
 
 -- Organizations that recruiters can optionally belong to
 CREATE TABLE IF NOT EXISTS company (
@@ -17,8 +18,9 @@ CREATE TABLE IF NOT EXISTS company (
 CREATE TABLE IF NOT EXISTS candidate (
     candidate_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    age SMALLINT,
+    age SMALLINT NOT NULL,
     email CITEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
     current_position TEXT NOT NULL DEFAULT 'Not employed',
     location TEXT,
     visa_status TEXT,
@@ -33,7 +35,7 @@ CREATE TABLE IF NOT EXISTS candidate (
     education JSONB NOT NULL DEFAULT '[]'::JSONB,
     profile_created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     profile_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT candidate_age CHECK (age IS NULL OR (age BETWEEN 16 AND 100)),
+    CONSTRAINT candidate_age CHECK (age BETWEEN 16 AND 100),
     CONSTRAINT candidate_experience CHECK (experience_years IS NULL OR experience_years >= 0),
     CONSTRAINT candidate_salary CHECK (salary_expectation IS NULL OR salary_expectation >= 0)
 );
@@ -44,6 +46,7 @@ CREATE TABLE IF NOT EXISTS recruiter (
     company_id UUID REFERENCES company(company_id) ON DELETE SET NULL,
     name TEXT NOT NULL,
     email CITEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
     organisation TEXT NOT NULL,
     role_title TEXT,
     notes TEXT,
@@ -88,3 +91,15 @@ CREATE INDEX IF NOT EXISTS candidate_availability_idx ON candidate (availability
 CREATE INDEX IF NOT EXISTS candidate_previous_positions_idx ON candidate USING GIN (previous_positions);
 CREATE INDEX IF NOT EXISTS candidate_education_idx ON candidate USING GIN (education);
 CREATE INDEX IF NOT EXISTS candidate_status_idx ON candidate_status (status);
+
+-- Embeddings for semantic search
+CREATE TABLE IF NOT EXISTS candidate_embeddings (
+    candidate_id UUID PRIMARY KEY REFERENCES candidate(candidate_id) ON DELETE CASCADE,
+    embedding vector(1536) NOT NULL,
+    embedding_model TEXT NOT NULL,
+    content_hash TEXT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS candidate_embeddings_model_idx ON candidate_embeddings (embedding_model);
+CREATE INDEX IF NOT EXISTS candidate_embeddings_vec_hnsw_idx ON candidate_embeddings USING hnsw (embedding vector_l2_ops);

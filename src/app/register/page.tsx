@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import {
   Box,
   Button,
@@ -9,6 +9,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -16,20 +17,38 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
 
   const passwordsMatch = password === confirmPassword;
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError("");
     if (!passwordsMatch) return;
 
     setLoading(true);
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    // Simulate API call
-    await new Promise((res) => setTimeout(res, 1000));
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error ?? "Registration failed");
+        setLoading(false);
+        return;
+      }
 
-    console.log({ name, email, password });
-    setLoading(false);
+      // On success, redirect to login
+      router.push("/login");
+    } catch (err) {
+      setError("Network error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -117,7 +136,11 @@ export default function RegisterPage() {
             {loading ? <CircularProgress size={24} /> : "Create account"}
           </Button>
         </Box>
-
+        {error && (
+          <Typography variant="body2" color="error" align="center" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
         <Typography
           variant="body2"
           color="text.secondary"
