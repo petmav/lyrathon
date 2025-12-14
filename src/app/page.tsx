@@ -7,6 +7,7 @@ type Testimonial = {
   quote: string;
   name: string;
   title: string;
+  image: string;
 };
 
 const testimonials: Testimonial[] = [
@@ -15,25 +16,51 @@ const testimonials: Testimonial[] = [
       "Linkdr surfaces signal, not noise. Our hiring loops are faster and far more confident.",
     name: "Priya Menon",
     title: "Head of Talent, Aurora Labs",
+    image: "/priya.png",
   },
   {
     quote:
       "The shortlist reasoning reads like a seasoned recruiter whispering in your ear.",
     name: "Marco Ruiz",
     title: "Engineering Manager, Northwind",
+    image: "/marco.png",
   },
   {
     quote:
-      "One profile submission got me multiple interviews that actually matched my stack.",
+      "One query found me multiple interviews that actually matched my company stack.",
     name: "Hannah Lee",
-    title: "Senior Frontend Engineer",
+    title: "Senior Recruiter, Liora",
+    image: "/hannah.png",
+  },
+];
+
+const applicantTestimonials: Testimonial[] = [
+  {
+    quote: "I applied once and stopped writing cover letters. The shortlist matches my stack.",
+    name: "Hannah Lee",
+    title: "Senior Frontend Engineer, Terra",
+    image: "/hannah.png",
+  },
+  {
+    quote: "The rationale shows why I’m a fit. I can prep faster and steer the conversation.",
+    name: "Marco Ruiz",
+    title: "Full Stack Engineer, Nordill",
+    image: "/marco.png",
+  },
+  {
+    quote: "Visa and location filters saved me from irrelevant outreach.",
+    name: "Priya Menon",
+    title: "Data Engineer, Scielbank",
+    image: "/priya.png",
   },
 ];
 
 export default function HomePage() {
   const [activeSection, setActiveSection] = useState("hero");
   const mainRef = useRef<HTMLElement | null>(null);
-  const sectionOrder = ["hero", "options", "testimonials", "contact"] as const;
+  const sectionOrder = ["hero", "options", "testimonials"] as const;
+  const showHeader = activeSection === "hero";
+  const showFooter = activeSection === "testimonials";
 
   useEffect(() => {
     const root = mainRef.current;
@@ -60,7 +87,7 @@ export default function HomePage() {
 
   return (
     <div className="page">
-      <header className="site-header">
+      <header className={`site-header ${showHeader ? "" : "hidden"}`}>
         <div className="container header-row">
           <div className="brand">
             <Link href="/" aria-label="Linkdr homepage">
@@ -80,9 +107,6 @@ export default function HomePage() {
             </Link>
             <Link className="nav-link" href="#testimonials">
               Stories
-            </Link>
-            <Link className="nav-link" href="#contact">
-              Contact
             </Link>
           </nav>
         </div>
@@ -117,8 +141,8 @@ export default function HomePage() {
                 <span className="kpi-label">Hiring teams</span>
               </div>
               <div className="kpi-card">
-                <span className="kpi-value">1,200+</span>
-                <span className="kpi-label">Open roles</span>
+                <span className="kpi-value">200+</span>
+                <span className="kpi-label">Companies hiring</span>
               </div>
             </div>
           </div>
@@ -144,7 +168,7 @@ export default function HomePage() {
                 </p>
                 <ul className="list">
                   <li>Single submission for multiple roles</li>
-                  <li>Explainable matches with strengths and concerns</li>
+                  <li>Prioritisation on critical criteria</li>
                   <li>Privacy-first: revoke or update anytime</li>
                 </ul>
                 <div className="card-actions">
@@ -188,52 +212,53 @@ export default function HomePage() {
               <p className="eyebrow">Proof in practice</p>
               <h2 className="section-title">Teams that switched to Linkdr</h2>
             </div>
-            <div className="testimonial-grid">
-              {testimonials.map((t) => (
-                <article key={t.name} className="testimonial-card">
-                  <p className="testimonial-quote">“{t.quote}”</p>
-                  <div className="testimonial-meta">
-                    <span className="testimonial-name">{t.name}</span>
-                    <span className="testimonial-title">{t.title}</span>
-                  </div>
-                </article>
-              ))}
+            <div className="testimonial-block">
+              <div className="testimonial-grid">
+                {testimonials.map((t) => (
+                  <article key={t.name} className="testimonial-card">
+                    <p className="testimonial-quote">“{t.quote}”</p>
+                    <div className="testimonial-meta">
+                      <img
+                        className="testimonial-portrait"
+                        src={t.image}
+                        alt={`${t.name} portrait`}
+                      />
+                      <div className="testimonial-meta-text">
+                        <span className="testimonial-name">{t.name}</span>
+                        <span className="testimonial-title">{t.title}</span>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className="panel-header testimonial-spacer">
+              <h2 className="section-title">Applicants that tried Linkdr</h2>
+            </div>
+            <div className="testimonial-block">
+              <div className="testimonial-grid">
+                {applicantTestimonials.map((t) => (
+                  <article key={`${t.name}-applicant`} className="testimonial-card">
+                    <p className="testimonial-quote">“{t.quote}”</p>
+                    <div className="testimonial-meta">
+                      <img
+                        className="testimonial-portrait"
+                        src={t.image}
+                        alt={`${t.name} portrait`}
+                      />
+                      <div className="testimonial-meta-text">
+                        <span className="testimonial-name">{t.name}</span>
+                        <span className="testimonial-title">{t.title}</span>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
-        <section id="contact" className="panel contact">
-          <div className="container contact-grid">
-            <div>
-              <p className="eyebrow">Stay in touch</p>
-              <h2 className="section-title">Let&apos;s build your hiring edge</h2>
-              <p className="section-subtitle">
-                Partnerships, enterprise pilots, or press — we&apos;re ready.
-              </p>
-            </div>
-            <div className="contact-card">
-              <h3>Contact</h3>
-              <p className="muted">hello@linkdr.ai</p>
-              <p className="muted">+1 (415) 555-0199</p>
-            </div>
-            <div className="contact-card">
-              <h3>Policies</h3>
-              <Link className="nav-link" href="/privacy">
-                Privacy Policy
-              </Link>
-              <Link className="nav-link" href="/terms">
-                Terms of Service
-              </Link>
-            </div>
-            <div className="contact-card">
-              <h3>For enterprises</h3>
-              <p className="muted">Request a tailored RAG evaluation and pilot.</p>
-              <Link className="btn primary" href="/contact">
-                Talk to sales
-              </Link>
-            </div>
-          </div>
-        </section>
       </main>
 
       <nav className="scroll-dots" aria-label="Page sections">
@@ -246,6 +271,25 @@ export default function HomePage() {
           />
         ))}
       </nav>
+
+      <footer id="contact" className={`footer ${showFooter ? "visible" : ""}`}>
+        <div className="container footer-row">
+          <div className="footer-brand">
+            <span className="brand-text">Let's find your talent.</span>
+          </div>
+          <div className="footer-links">
+            <Link className="nav-link" href="/privacy">
+              Privacy & Terms
+            </Link>
+            <Link className="nav-link" href="/contact">
+              Contact
+            </Link>
+            <Link className="nav-link" href="/enterprise">
+              Enterprise
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
