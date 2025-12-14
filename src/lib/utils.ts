@@ -57,13 +57,7 @@ export const apiCall = (path: string, method: string, data = {}) => {
       },
       body: method !== 'GET' ? JSON.stringify(data) : undefined,
     }).then((response) => {
-      if (response.status === 200) {
         response.json().then(resolve);
-      } else if (response.status === 403 || response.status === 400) {
-        response.json().then(reject);
-      } else {
-        reject(response);
-      }
-    })
+    }).catch(reject);
   })
 }

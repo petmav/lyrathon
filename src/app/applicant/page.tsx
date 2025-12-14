@@ -7,6 +7,10 @@ import {
   Typography,
   TextField,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   AppBar,
   Toolbar,
   Stack,
@@ -14,6 +18,8 @@ import {
   Chip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from '@mui/icons-material/Edit';
+import CloseIcon from '@mui/icons-material/Close';
 import { apiCall } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
@@ -129,6 +135,7 @@ export default function ApplicantFormPage(): JSX.Element {
 
   const [previousPositions, setPreviousPositions] = useState<PreviousPosition[]>([]);
   const [education, setEducation] = useState<EducationEntry[]>([]);
+  const [openEdit, setOpenEdit] = useState(false);
   useEffect(() => {
     try {
       const candidateId = localStorage.getItem("candidate_id");
@@ -198,6 +205,9 @@ export default function ApplicantFormPage(): JSX.Element {
     console.log("Logged out");
   };
 
+  const openEditModal = () => setOpenEdit(true);
+  const closeEditModal = () => setOpenEdit(false);
+
   /* =======================
      Submit
   ======================= */
@@ -232,9 +242,10 @@ export default function ApplicantFormPage(): JSX.Element {
 
     apiCall("/api/candidates/register", "POST", formData)
       .then((res) => {
-        router.push('/applicant/details');
-        console.log(res)
-        })
+        // close modal if open and navigate to details
+        setOpenEdit(false);
+        console.log(res);
+      })
       .catch((err) => console.log(err));
   };
 
@@ -332,84 +343,162 @@ export default function ApplicantFormPage(): JSX.Element {
 
       <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
         <Paper sx={{ width: "100%", maxWidth: 900, p: 4, borderRadius: 3 }}>
-          <Typography variant="h5" fontWeight={600} gutterBottom>
-            Submit your details
-          </Typography>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h5" fontWeight={600} gutterBottom>
+              Applicant Profile
+            </Typography>
+            <Button startIcon={<EditIcon />} onClick={openEditModal}>
+              Edit
+            </Button>
+          </Stack>
 
-          <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <TextField label="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
-            <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <TextField label="Age" type="number" value={age} onChange={(e) => setAge(e.target.value)} />
-            <TextField label="Current Position" value={currentPosition} onChange={(e) => setCurrentPosition(e.target.value)} />
-            <TextField label="Location" value={location} onChange={(e) => setLocation(e.target.value)} />
-            <TextField label="Visa / Work Status" value={visaStatus} onChange={(e) => setVisaStatus(e.target.value)} />
-            <TextField label="Years of Experience" type="number" value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)} />
-            <TextField label="Salary Expectation" type="number" value={salaryExpectation} onChange={(e) => setSalaryExpectation(e.target.value)} />
-            <TextField label="Availability Date" type="date" value={availabilityDate} onChange={(e) => setAvailabilityDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 2 }}>
+            <Typography><strong>Name:</strong> {name || "—"}</Typography>
+            <Typography><strong>Email:</strong> {email || "—"}</Typography>
+            <Typography><strong>Age:</strong> {age || "—"}</Typography>
+            <Typography><strong>Current Position:</strong> {currentPosition || "—"}</Typography>
+            <Typography><strong>Location:</strong> {location || "—"}</Typography>
+            <Typography><strong>Visa / Work Status:</strong> {visaStatus || "—"}</Typography>
+            <Typography><strong>Years of Experience:</strong> {experienceYears || "—"}</Typography>
+            <Typography><strong>Salary Expectation:</strong> {salaryExpectation || "—"}</Typography>
+            <Typography><strong>Availability Date:</strong> {availabilityDate || "—"}</Typography>
 
-            <ChipInput label="Skills" values={skills} setValues={setSkills} />
-            <ChipInput label="Awards" values={awards} setValues={setAwards} />
-            <ChipInput label="Certifications" values={certifications} setValues={setCertifications} />
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle2">Skills</Typography>
+              <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                {skills.length ? skills.map((s, i) => <Chip key={i} label={s} />) : <Typography>—</Typography>}
+              </Stack>
+            </Box>
 
-            {/* Projects */}
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle2">Awards</Typography>
+              <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                {awards.length ? awards.map((a, i) => <Chip key={i} label={a} />) : <Typography>—</Typography>}
+              </Stack>
+            </Box>
+
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle2">Certifications</Typography>
+              <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                {certifications.length ? certifications.map((c, i) => <Chip key={i} label={c} />) : <Typography>—</Typography>}
+              </Stack>
+            </Box>
+
             <Box sx={{ mt: 2 }}>
               <Typography variant="subtitle1">Projects</Typography>
-              {projects.map((p, i) => (
-                <Stack key={i} spacing={1} sx={{ mt: 1 }}>
-                  <TextField label="Project Title" value={p.title} onChange={(e) => updateProject(i, "title", e.target.value)} />
-                  <TextField label="Project Description" value={p.description} onChange={(e) => updateProject(i, "description", e.target.value)} multiline minRows={2} />
-                  <Button color="error" onClick={() => removeProject(i)}>
-                    Remove Project
-                  </Button>
-                </Stack>
-              ))}
-              <Button onClick={addProject} sx={{ mt: 1 }}>
-                Add Project
-              </Button>
+              {projects.length ? projects.map((p, i) => (
+                <Box key={i} sx={{ mt: 1 }}>
+                  <Typography><strong>{p.title}</strong></Typography>
+                  <Typography variant="body2">{p.description}</Typography>
+                </Box>
+              )) : <Typography sx={{ mt: 1 }}>—</Typography>}
             </Box>
 
-            {/* Previous Positions */}
-            <Box>
+            <Box sx={{ mt: 2 }}>
               <Typography variant="subtitle1">Previous Positions</Typography>
-              {previousPositions.map((pos, index) => (
-                <Stack key={index} direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                  <TextField label="Title" value={pos.title} onChange={(e) => updatePreviousPosition(index, "title", e.target.value)} />
-                  <TextField label="Organization" value={pos.org} onChange={(e) => updatePreviousPosition(index, "org", e.target.value)} />
-                  <TextField label="Start Date" type="date" value={pos.start_date} onChange={(e) => updatePreviousPosition(index, "start_date", e.target.value)} InputLabelProps={{ shrink: true }} />
-                  <TextField label="End Date" type="date" value={pos.end_date} onChange={(e) => updatePreviousPosition(index, "end_date", e.target.value)} InputLabelProps={{ shrink: true }} />
-                  <IconButton color="error" onClick={() => removePreviousPosition(index)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Stack>
-              ))}
-              <Button onClick={addPreviousPosition} sx={{ mt: 1 }}>
-                Add Previous Position
-              </Button>
+              {previousPositions.length ? previousPositions.map((pos, i) => (
+                <Box key={i} sx={{ mt: 1 }}>
+                  <Typography><strong>{pos.title}</strong> at {pos.org}</Typography>
+                  <Typography variant="body2">{pos.start_date} — {pos.end_date}</Typography>
+                </Box>
+              )) : <Typography sx={{ mt: 1 }}>—</Typography>}
             </Box>
 
-            {/* Education */}
             <Box sx={{ mt: 2 }}>
               <Typography variant="subtitle1">Education</Typography>
-              {education.map((edu, index) => (
-                <Stack key={index} direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                  <TextField label="Degree" value={edu.degree} onChange={(e) => updateEducation(index, "degree", e.target.value)} />
-                  <TextField label="School" value={edu.school} onChange={(e) => updateEducation(index, "school", e.target.value)} />
-                  <TextField label="Graduation Year" type="number" value={edu.graduation_year} onChange={(e) => updateEducation(index, "graduation_year", e.target.value)} />
-                  <IconButton color="error" onClick={() => removeEducation(index)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Stack>
-              ))}
-              <Button onClick={addEducation} sx={{ mt: 1 }}>
-                Add Education Entry
-              </Button>
+              {education.length ? education.map((edu, i) => (
+                <Box key={i} sx={{ mt: 1 }}>
+                  <Typography><strong>{edu.degree}</strong>, {edu.school}</Typography>
+                  <Typography variant="body2">Graduation: {edu.graduation_year}</Typography>
+                </Box>
+              )) : <Typography sx={{ mt: 1 }}>—</Typography>}
             </Box>
-
-            <Button type="submit" variant="contained" size="large" sx={{ mt: 3 }}>
-              Submit Application
-            </Button>
           </Box>
         </Paper>
+
+        <Dialog open={openEdit} onClose={closeEditModal} fullWidth maxWidth="md">
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Edit Applicant
+            <IconButton onClick={closeEditModal} size="small"><CloseIcon /></IconButton>
+          </DialogTitle>
+          <DialogContent>
+            <Box id="applicant-form" component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <TextField label="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
+              <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <TextField label="Age" type="number" value={age} onChange={(e) => setAge(e.target.value)} />
+              <TextField label="Current Position" value={currentPosition} onChange={(e) => setCurrentPosition(e.target.value)} />
+              <TextField label="Location" value={location} onChange={(e) => setLocation(e.target.value)} />
+              <TextField label="Visa / Work Status" value={visaStatus} onChange={(e) => setVisaStatus(e.target.value)} />
+              <TextField label="Years of Experience" type="number" value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)} />
+              <TextField label="Salary Expectation" type="number" value={salaryExpectation} onChange={(e) => setSalaryExpectation(e.target.value)} />
+              <TextField label="Availability Date" type="date" value={availabilityDate} onChange={(e) => setAvailabilityDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+
+              <ChipInput label="Skills" values={skills} setValues={setSkills} />
+              <ChipInput label="Awards" values={awards} setValues={setAwards} />
+              <ChipInput label="Certifications" values={certifications} setValues={setCertifications} />
+
+              {/* Projects */}
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1">Projects</Typography>
+                {projects.map((p, i) => (
+                  <Stack key={i} spacing={1} sx={{ mt: 1 }}>
+                    <TextField label="Project Title" value={p.title} onChange={(e) => updateProject(i, "title", e.target.value)} />
+                    <TextField label="Project Description" value={p.description} onChange={(e) => updateProject(i, "description", e.target.value)} multiline minRows={2} />
+                    <Button color="error" onClick={() => removeProject(i)}>
+                      Remove Project
+                    </Button>
+                  </Stack>
+                ))}
+                <Button onClick={addProject} sx={{ mt: 1 }}>
+                  Add Project
+                </Button>
+              </Box>
+
+              {/* Previous Positions */}
+              <Box>
+                <Typography variant="subtitle1">Previous Positions</Typography>
+                {previousPositions.map((pos, index) => (
+                  <Stack key={index} direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                    <TextField label="Title" value={pos.title} onChange={(e) => updatePreviousPosition(index, "title", e.target.value)} />
+                    <TextField label="Organization" value={pos.org} onChange={(e) => updatePreviousPosition(index, "org", e.target.value)} />
+                    <TextField label="Start Date" type="date" value={pos.start_date} onChange={(e) => updatePreviousPosition(index, "start_date", e.target.value)} InputLabelProps={{ shrink: true }} />
+                    <TextField label="End Date" type="date" value={pos.end_date} onChange={(e) => updatePreviousPosition(index, "end_date", e.target.value)} InputLabelProps={{ shrink: true }} />
+                    <IconButton color="error" onClick={() => removePreviousPosition(index)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Stack>
+                ))}
+                <Button onClick={addPreviousPosition} sx={{ mt: 1 }}>
+                  Add Previous Position
+                </Button>
+              </Box>
+
+              {/* Education */}
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1">Education</Typography>
+                {education.map((edu, index) => (
+                  <Stack key={index} direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                    <TextField label="Degree" value={edu.degree} onChange={(e) => updateEducation(index, "degree", e.target.value)} />
+                    <TextField label="School" value={edu.school} onChange={(e) => updateEducation(index, "school", e.target.value)} />
+                    <TextField label="Graduation Year" type="number" value={edu.graduation_year} onChange={(e) => updateEducation(index, "graduation_year", e.target.value)} />
+                    <IconButton color="error" onClick={() => removeEducation(index)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Stack>
+                ))}
+                <Button onClick={addEducation} sx={{ mt: 1 }}>
+                  Add Education Entry
+                </Button>
+              </Box>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeEditModal}>Cancel</Button>
+            <Button type="submit" form="applicant-form" variant="contained">
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Box>
   );
