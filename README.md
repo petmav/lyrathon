@@ -1,4 +1,4 @@
-# Lyrathon
+# Linkdr
 
 A Next.js application scaffold designed for building applications with RAG (Retrieval-Augmented Generation) pipeline capabilities.
 
