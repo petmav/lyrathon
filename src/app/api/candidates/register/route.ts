@@ -14,6 +14,11 @@ import {
   isResponseValidationError,
   parseRequestPayload,
 } from '@/lib/validation';
+import { logEvent } from '@/lib/logger';
+import {
+  processNextVerificationRun,
+  queueVerificationForCandidate,
+} from '@/lib/verification';
 
 export async function POST(request: Request) {
   try {
@@ -25,11 +30,30 @@ export async function POST(request: Request) {
     const candidate = await saveCandidate(payload);
     let embeddingUpdated = false;
 
+    await logEvent('info', 'candidate.register.received', {
+      candidateId: candidate.candidate_id,
+      email: candidate.email,
+    });
+
     try {
       const updateResult = await refreshCandidateEmbedding(candidate.candidate_id);
       embeddingUpdated = updateResult.updated;
     } catch (embeddingError) {
       console.error('Embedding refresh failed', embeddingError);
+    }
+
+    // Queue verification as a background task (simulated cloud task)
+    try {
+      const queued = await queueVerificationForCandidate(candidate.candidate_id);
+      if (queued) {
+        setTimeout(() => {
+          processNextVerificationRun().catch((err) =>
+            console.error('Verification task failed', err),
+          );
+        }, 0);
+      }
+    } catch (verificationError) {
+      console.error('Failed to queue verification', verificationError);
     }
 
     const { password_hash, ...safeCandidate } = candidate as typeof candidate & {
@@ -47,6 +71,11 @@ export async function POST(request: Request) {
         embeddingUpdated,
       },
     );
+
+    await logEvent('info', 'candidate.register.success', {
+      candidateId: candidate.candidate_id,
+      embeddingUpdated,
+    });
 
     return NextResponse.json(responseBody, { status: 201 });
   } catch (error) {
@@ -66,6 +95,9 @@ export async function POST(request: Request) {
     }
 
     console.error('Candidate registration failed', error);
+    await logEvent('error', 'candidate.register.error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { error: 'Failed to create candidate' },
       { status: 500 },

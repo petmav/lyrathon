@@ -177,7 +177,7 @@ export default function RecruiterQueryPage(): JSX.Element {
         return () => {
             timers.forEach((t) => clearTimeout(t));
         };
-    }, [timeline]);
+    }, [timeline, typedText]);
 
     useEffect(() => {
         let elapsedTimer: number | null = null;

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Box,
   Paper,
@@ -19,24 +19,39 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 
+type ApplicationForm = {
+  name: string;
+  email: string;
+  location: string;
+  visaStatus: string;
+  skills: string[];
+  experience: string;
+  jobHistory: string;
+  certifications: string;
+  resumeName: string;
+  status: string;
+};
+
+const initialApplication: ApplicationForm = {
+  name: "Jane Doe",
+  email: "jane.doe@example.com",
+  location: "Sydney, Australia",
+  visaStatus: "Permanent Resident",
+  skills: ["JavaScript", "React", "Node.js"],
+  experience:
+    "3+ years experience building full-stack web applications in React and Node.js.",
+  jobHistory:
+    "Frontend Engineer at Acme Corp (2022–Present)\nJunior Developer at Beta Labs (2020–2022)",
+  certifications: "AWS Certified Cloud Practitioner",
+  resumeName: "Jane_Doe_Resume.pdf",
+  status: "Submitted",
+};
+
 export default function ApplicationDetailsPage() {
-  const [application, setApplication] = useState({
-    name: "Jane Doe",
-    email: "jane.doe@example.com",
-    location: "Sydney, Australia",
-    visaStatus: "Permanent Resident",
-    skills: ["JavaScript", "React", "Node.js"],
-    experience:
-      "3+ years experience building full-stack web applications in React and Node.js.",
-    jobHistory:
-      "Frontend Engineer at Acme Corp (2022–Present)\nJunior Developer at Beta Labs (2020–2022)",
-    certifications: "AWS Certified Cloud Practitioner",
-    resumeName: "Jane_Doe_Resume.pdf",
-    status: "Submitted",
-  });
+  const [application, setApplication] = useState<ApplicationForm>(initialApplication);
 
   const [editOpen, setEditOpen] = useState(false);
-  const [editData, setEditData] = useState(application);
+  const [editData, setEditData] = useState<ApplicationForm>(initialApplication);
   const router = useRouter();
   const handleLogout = () => {
     router.push('/');
@@ -44,17 +59,21 @@ export default function ApplicationDetailsPage() {
   };
 
   const handleSave = () => {
+    const normalizedSkills = Array.isArray(editData.skills)
+      ? editData.skills
+      : String(editData.skills)
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+
     setApplication({
       ...editData,
-      skills: editData.skills
-        .toString()
-        .split(",")
-        .map((s) => s.trim()),
+      skills: normalizedSkills,
     });
     setEditOpen(false);
   };
 
-  const Section = ({ title, children }) => (
+  const Section = ({ title, children }: { title: string; children: ReactNode }) => (
     <Box sx={{ mb: 3 }}>
       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
         {title}
@@ -154,8 +173,20 @@ export default function ApplicationDetailsPage() {
           />
           <TextField
             label="Skills (comma separated)"
-            value={editData.skills}
-            onChange={(e) => setEditData({ ...editData, skills: e.target.value })}
+            value={
+              Array.isArray(editData.skills)
+                ? editData.skills.join(", ")
+                : editData.skills
+            }
+            onChange={(e) =>
+              setEditData({
+                ...editData,
+                skills: e.target.value
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean),
+              })
+            }
           />
           <TextField
             label="Experience"

@@ -141,3 +141,38 @@ INSERT INTO candidate_status (
   NULL
 )
 ON CONFLICT (candidate_status_id) DO NOTHING;
+
+-- Sample verification runs and aggregate scores
+INSERT INTO verification_runs (
+  verification_id,
+  candidate_id,
+  run_type,
+  input_hash,
+  status,
+  confidence,
+  rationale,
+  metadata,
+  created_at,
+  updated_at,
+  started_at,
+  finished_at
+) VALUES
+  (
+    'f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0',
+    '33333333-3333-3333-3333-333333333333',
+    'full_profile',
+    'seed-hash-tanya',
+    'succeeded',
+    0.87,
+    'Resume, education, and portfolio align; transcript matches claimed degree.',
+    '{"sources":["resume","transcript","portfolio"]}',
+    now(),
+    now(),
+    now(),
+    now()
+  )
+ON CONFLICT (verification_id) DO NOTHING;
+
+UPDATE candidate
+SET verifiable_confidence_score = 0.87
+WHERE candidate_id = '33333333-3333-3333-3333-333333333333';
