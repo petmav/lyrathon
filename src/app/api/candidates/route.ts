@@ -91,8 +91,26 @@ export async function GET(request: Request) {
       [candidate_id],
     );
 
+    const docs = await db.query(
+      `SELECT document_id, type, file_url, checksum, is_primary, created_at
+       FROM candidate_documents
+       WHERE candidate_id = $1
+       ORDER BY created_at ASC`,
+      [candidate_id],
+    );
+
+    const verifications = await db.query(
+      `SELECT run_type, confidence, status, finished_at
+       FROM verification_runs
+       WHERE candidate_id = $1
+       ORDER BY finished_at DESC`,
+      [candidate_id],
+    );
+
     const row = (result as any).rows?.[0] ?? null;
-    return NextResponse.json({ data: row });
+    return NextResponse.json({
+      data: row ? { ...row, documents: docs.rows, verifications: verifications.rows } : null,
+    });
   } catch (error) {
     console.error('Failed to retrieve candidate', error);
     return NextResponse.json({ error: 'Failed to retrieve candidate' }, { status: 500 });

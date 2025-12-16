@@ -82,7 +82,7 @@ scripts\db-reset.bat
 
 ## API
 
-Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL` / `OPENAI_EMBEDDING_MODEL` / `OPENAI_SHORTLIST_MODEL`) in `.env` to enable LLM-powered query parsing, semantic retrieval, and final shortlisting. Add `LOG_WEBHOOK_URL` if you want logs posted to an external endpoint; otherwise they are printed to stdout. The default embedding model is `text-embedding-3-small` (1536 dimensions) to stay within pgvector’s 2000-dimension index limit. Key endpoints:
+Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL` / `OPENAI_EMBEDDING_MODEL` / `OPENAI_SHORTLIST_MODEL` / `OPENAI_VERIFICATION_MODEL`) in `.env` to enable LLM-powered query parsing, semantic retrieval, shortlist generation, and verification scoring. Add `LOG_WEBHOOK_URL` if you want logs posted to an external endpoint; otherwise they are printed to stdout. The default embedding model is `text-embedding-3-small` (1536 dimensions) to stay within pgvector’s 2000-dimension index limit. Document ingestion for verification will fetch and parse PDF/text files up to `VERIFICATION_MAX_DOC_BYTES` (default ~2MB) and include the extracted text in the GPT prompt. Key endpoints:
 
 ### `/api/candidates`
 
@@ -175,6 +175,19 @@ Response:
 ```
 
 Every response is validated against the published schema (`candidateRegistrationResponseSchema`) before being sent, guarding downstream consumers from shape drift.
+
+### Verification queue
+
+- New candidates automatically enqueue a verification run that checks resume/education/projects alignment. Runs are processed in the background (simulated cloud task) and stored in `verification_runs` with an aggregated `verifiable_confidence_score` on `candidate`. The verifier de-duplicates project links across candidates, can optionally use `web_search`, records overlap counts plus JSON-formatted checks in `metadata`, and now pulls text from uploaded resume/transcript URLs (PDF/text) to give GPT real content to judge against claims.
+- Trigger processing manually (or via a scheduler) with:
+
+```bash
+curl -X POST http://localhost:3000/api/verification/process \
+  -H "Content-Type: application/json" \
+  -d '{ "limit": 3 }'
+```
+
+If the LLM or web_search isn’t available, the run is marked as failed and the candidate remains usable. Successful runs update the per-candidate confidence average; all API calls emit structured logs via `logEvent`.
 
 ## Retrieval Flow
 

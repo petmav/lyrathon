@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Testimonial = {
   quote: string;
@@ -55,13 +56,15 @@ const applicantTestimonials: Testimonial[] = [
   },
 ];
 
+const SECTION_ORDER = ["hero", "options", "testimonials"] as const;
+
 export default function HomePage() {
   const [activeSection, setActiveSection] = useState("hero");
   const [heroSeen, setHeroSeen] = useState(false);
   const [optionsSeen, setOptionsSeen] = useState(false);
   const [testimonialsSeen, setTestimonialsSeen] = useState(false);
   const mainRef = useRef<HTMLElement | null>(null);
-  const sectionOrder = ["hero", "options", "testimonials"] as const;
+  const sectionOrder = useMemo(() => SECTION_ORDER, []);
   const showHeader = activeSection === "hero";
   const showFooter = activeSection === "testimonials";
   useEffect(() => {
@@ -287,10 +290,13 @@ export default function HomePage() {
                   <article key={t.name} className="testimonial-card">
                     <p className="testimonial-quote">“{t.quote}”</p>
                     <div className="testimonial-meta">
-                      <img
+                      <Image
                         className="testimonial-portrait"
                         src={t.image}
                         alt={`${t.name} portrait`}
+                        width={56}
+                        height={56}
+                        priority
                       />
                       <div className="testimonial-meta-text">
                         <span className="testimonial-name">{t.name}</span>
@@ -311,10 +317,12 @@ export default function HomePage() {
                   <article key={`${t.name}-applicant`} className="testimonial-card">
                     <p className="testimonial-quote">“{t.quote}”</p>
                     <div className="testimonial-meta">
-                      <img
+                      <Image
                         className="testimonial-portrait"
                         src={t.image}
                         alt={`${t.name} portrait`}
+                        width={56}
+                        height={56}
                       />
                       <div className="testimonial-meta-text">
                         <span className="testimonial-name">{t.name}</span>
@@ -344,7 +352,7 @@ export default function HomePage() {
       <footer id="contact" className={`footer ${showFooter ? "visible" : ""}`}>
         <div className="container footer-row">
           <div className="footer-brand">
-            <span className="brand-text">Let's find your talent.</span>
+            <span className="brand-text">{"Let's find your talent."}</span>
           </div>
           <div className="footer-links">
             <Link className="nav-link" href="/privacy">
