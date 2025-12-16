@@ -125,12 +125,24 @@ export async function processNextVerificationRun() {
   }
 }
 
-// Helper to process multiple queued runs in sequence without holding a single transaction.
-export async function processQueuedVerifications(limit = 5) {
-  for (let i = 0; i < limit; i += 1) {
-    const result = await processNextVerificationRun();
-    if (!result.processed) break;
-  }
+// Helper to process multiple queued runs with optional limited concurrency.
+export async function processQueuedVerifications(limit = 5, concurrency = 2) {
+  let processed = 0;
+  let stop = false;
+
+  const worker = async () => {
+    while (!stop && processed < limit) {
+      const result = await processNextVerificationRun();
+      if (!result.processed) {
+        stop = true;
+        return;
+      }
+      processed += 1;
+    }
+  };
+
+  const workers = Array.from({ length: Math.max(1, concurrency) }, () => worker());
+  await Promise.all(workers);
 }
 
 async function hasSuccessfulRun(candidateId: string, runType: VerificationRunType) {
@@ -297,53 +309,50 @@ async function markRunFailed(verificationId: string, reason: string) {
 }
 
 async function recomputeCandidateVerificationScore(candidateId: string) {
-  // Only set a candidate score when all three aspect runs exist; otherwise null.
-  const aspectRuns = await db.query<{ run_type: string; confidence: number }>(
-    `SELECT DISTINCT ON (run_type) run_type, confidence
-     FROM verification_runs
-     WHERE candidate_id = $1
-       AND status = 'succeeded'
-       AND run_type IN ('resume', 'transcript', 'project_links')
-       AND confidence IS NOT NULL
-     ORDER BY run_type, finished_at DESC`,
-    [candidateId],
-  );
-
-  const byType = new Map(
-    aspectRuns.rows.map((row) => [row.run_type, Number(row.confidence)] as const),
-  );
-
-  const requiredTypes: VerificationRunType[] = ['resume', 'transcript', 'project_links'];
-  const confidences: number[] = [];
-  for (const rt of requiredTypes) {
-    const val = byType.get(rt);
-    if (val === undefined || Number.isNaN(val)) {
-      await db.query(
-        `UPDATE candidate
-         SET verifiable_confidence_score = NULL,
-             profile_updated_at = now()
-         WHERE candidate_id = $1`,
-        [candidateId],
-      );
-      return;
-    }
-    confidences.push(val);
-  }
-
-  const finalConfidence =
-    confidences.reduce((sum, value) => sum + value, 0) / confidences.length;
-
   await db.query(
-    `UPDATE candidate
-     SET verifiable_confidence_score = $2,
-         profile_updated_at = now()
-     WHERE candidate_id = $1`,
-    [candidateId, finalConfidence],
+    `
+    WITH aspect_runs AS (
+      SELECT DISTINCT ON (run_type) run_type, confidence
+      FROM verification_runs
+      WHERE candidate_id = $1
+        AND status = 'succeeded'
+        AND run_type IN ('resume', 'transcript', 'project_links')
+        AND confidence IS NOT NULL
+      ORDER BY run_type, finished_at DESC
+    ),
+    counts AS (
+      SELECT COUNT(*) AS found, AVG(confidence)::numeric AS avg_conf
+      FROM aspect_runs
+    )
+    UPDATE candidate
+    SET verifiable_confidence_score = (
+      SELECT CASE WHEN found = 3 THEN avg_conf ELSE NULL END FROM counts
+    ),
+        profile_updated_at = now()
+    WHERE candidate_id = $1;
+    `,
+    [candidateId],
   );
 }
 
 function hashPayload(payload: unknown) {
-  return crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+  const normalize = (value: any): any => {
+    if (Array.isArray(value)) {
+      return value.map((v) => normalize(v));
+    }
+    if (value && typeof value === 'object') {
+      const sortedKeys = Object.keys(value).sort();
+      const obj: Record<string, unknown> = {};
+      for (const key of sortedKeys) {
+        obj[key] = normalize((value as any)[key]);
+      }
+      return obj;
+    }
+    return value;
+  };
+
+  const normalizedPayload = normalize(payload);
+  return crypto.createHash('sha256').update(JSON.stringify(normalizedPayload)).digest('hex');
 }
 
 function clampConfidence(value: number) {
@@ -382,7 +391,7 @@ async function buildCandidatePayload(candidateId: string): Promise<CandidatePayl
 
   const hydratedDocs = await Promise.all(
     docs.rows.slice(0, 5).map(async (doc) => {
-      const text = await fetchDocumentText(doc.file_url).catch(() => null);
+      const text = await getDocumentTextWithCache(doc);
       if (text?.text) {
         await logEvent('info', 'verification.document.text_extracted', {
           candidateId,
@@ -400,6 +409,53 @@ async function buildCandidatePayload(candidateId: string): Promise<CandidatePayl
     documents: hydratedDocs,
     links: await resolveLinks(candidateId, candidateResult.rows[0], docs.rows),
   };
+}
+
+type CachedDocRow = {
+  text_content: string | null;
+  checksum: string;
+  content_type: string | null;
+  bytes: number | null;
+};
+
+async function getDocumentTextWithCache(doc: {
+  document_id: string;
+  file_url: string | null;
+  checksum: string | null;
+}) {
+  if (!doc.file_url || !doc.checksum) return null;
+
+  const cached = await db.query<CachedDocRow>(
+    `SELECT text_content, checksum, content_type, bytes
+     FROM candidate_document_cache
+     WHERE document_id = $1 AND checksum = $2`,
+    [doc.document_id, doc.checksum],
+  );
+
+  if (cached.rowCount && cached.rows[0].text_content) {
+    return {
+      text: cached.rows[0].text_content,
+      bytes: cached.rows[0].bytes ?? 0,
+      contentType: cached.rows[0].content_type ?? undefined,
+    };
+  }
+
+  const fetched = await fetchDocumentText(doc.file_url).catch(() => null);
+  if (!fetched?.text) return null;
+
+  await db.query(
+    `INSERT INTO candidate_document_cache (document_id, checksum, text_content, content_type, bytes, updated_at)
+     VALUES ($1, $2, $3, $4, $5, now())
+     ON CONFLICT (document_id) DO UPDATE
+     SET checksum = EXCLUDED.checksum,
+         text_content = EXCLUDED.text_content,
+         content_type = EXCLUDED.content_type,
+         bytes = EXCLUDED.bytes,
+         updated_at = now()`,
+    [doc.document_id, doc.checksum, fetched.text, fetched.contentType ?? null, fetched.bytes ?? null],
+  );
+
+  return fetched;
 }
 
 type VerificationAssessment = {
@@ -457,42 +513,68 @@ async function runVerificationModel(
       'Review all provided evidence (resume, transcript, projects) for credibility and alignment with the candidate profile. Return confidence 0-1 for overall fit.',
   };
 
-  const response = await verificationClient.responses.create({
-    model: VERIFICATION_MODEL,
-    input: [
-      {
-        role: 'system',
-        content: [
-          {
-            type: 'input_text',
-            text: [
-              'You are a verification agent. Return JSON with per-aspect confidence (0-1) limited to the target aspects, plus an overall confidence for those aspects only.',
-              runInstructions[runType],
-              'If evidence for a target aspect is missing, state that explicitly instead of inventing details.',
-            ].join(' '),
-          },
-        ],
+  const callModel = async () => {
+    const timeoutMs = 45_000;
+    const call = verificationClient.responses.create({
+      model: VERIFICATION_MODEL,
+      input: [
+        {
+          role: 'system',
+          content: [
+            {
+              type: 'input_text',
+              text: [
+                'You are a verification agent. Return JSON with per-aspect confidence (0-1) limited to the target aspects, plus an overall confidence for those aspects only.',
+                runInstructions[runType],
+                'If evidence for a target aspect is missing, state that explicitly instead of inventing details.',
+              ].join(' '),
+            },
+          ],
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: buildVerificationPrompt(payload, runType),
+            },
+          ],
+        },
+      ],
+      tools: hasLinks ? [{ type: 'web_search' }] : undefined,
+      tool_choice: hasLinks ? 'auto' : 'none',
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'VerificationResult',
+          schema: verificationJsonSchema,
+        },
       },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'input_text',
-            text: buildVerificationPrompt(payload, runType),
-          },
-        ],
-      },
-    ],
-    tools: hasLinks ? [{ type: 'web_search' }] : undefined,
-    tool_choice: hasLinks ? 'auto' : 'none',
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'VerificationResult',
-        schema: verificationJsonSchema,
-      },
-    },
-  });
+    });
+
+    return await Promise.race([
+      call,
+      new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error('verification call timed out')), timeoutMs),
+      ),
+    ]);
+  };
+
+  let response: Response | null = null;
+  let attempts = 0;
+  const maxAttempts = 2;
+  while (attempts < maxAttempts && !response) {
+    try {
+      response = await callModel();
+    } catch (err) {
+      attempts += 1;
+      if (attempts >= maxAttempts) {
+        console.error('Verification model failed', err);
+        return null;
+      }
+    }
+  }
+  if (!response) return null;
 
   const output = extractOutputText(response);
   if (!output) return null;
