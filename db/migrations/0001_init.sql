@@ -103,3 +103,11 @@ CREATE TABLE IF NOT EXISTS candidate_embeddings (
 
 CREATE INDEX IF NOT EXISTS candidate_embeddings_model_idx ON candidate_embeddings (embedding_model);
 CREATE INDEX IF NOT EXISTS candidate_embeddings_vec_hnsw_idx ON candidate_embeddings USING hnsw (embedding vector_l2_ops);
+
+CREATE TABLE IF NOT EXISTS recruiter_queries (
+    query_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    recruiter_id UUID NOT NULL REFERENCES recruiter(recruiter_id) ON DELETE CASCADE,
+    query_text TEXT NOT NULL,
+    is_assistant BOOLEAN NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

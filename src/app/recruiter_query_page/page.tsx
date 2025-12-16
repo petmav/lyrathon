@@ -156,6 +156,72 @@ export default function RecruiterQueryPage(): JSX.Element {
     );
 
     useEffect(() => {
+        const fetchHistory = async () => {
+            const recruiterId = localStorage.getItem("recruiter_id");
+            if (!recruiterId) {
+                console.error("Recruiter ID not found in local storage.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/query/history?recruiter_id=${recruiterId}`);
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch history: ${res.status}`);
+                }
+
+                const data = await res.json();
+                const history = data.flatMap((item: any) => {
+                    if (item.is_assistant) {
+                        try {
+                            const parsed = JSON.parse(item.query_text);
+                            if (parsed?.shortlist && Array.isArray(parsed.shortlist)) {
+                                return [
+                                    {
+                                        kind: "shortlist",
+                                        id: item.query_id,
+                                        data: {
+                                            filters: parsed.filters || {},
+                                            shortlist: parsed.shortlist,
+                                            overall_summary: parsed.overall_summary || "",
+                                        },
+                                    },
+                                    {
+                                        kind: "message",
+                                        msg: {
+                                            id: `${item.query_id}-summary`,
+                                            role: "assistant",
+                                            text: parsed.overall_summary || "",
+                                            ts: new Date(item.created_at).getTime(),
+                                        },
+                                    },
+                                ];
+                            }
+                        } catch (error) {
+                            console.error("Failed to parse assistant query text as JSON:", error);
+                        }
+                    }
+
+                    return {
+                        kind: "message",
+                        msg: {
+                            id: item.query_id,
+                            role: item.is_assistant ? "assistant" : "recruiter",
+                            text: item.query_text,
+                            ts: new Date(item.created_at).getTime(),
+                        },
+                    };
+                });
+
+                setTimeline((prev) => [...history, ...prev]);
+            } catch (error) {
+                console.error("Error fetching query history:", error);
+            }
+        };
+
+        fetchHistory();
+    }, []);
+
+    useEffect(() => {
         const timers: number[] = [];
 
         const runTyping = (idValue: string, full: string) => {
@@ -261,10 +327,15 @@ export default function RecruiterQueryPage(): JSX.Element {
         scrollToBottom();
 
         try {
+            const recruiter_id = localStorage.getItem("recruiter_id");
+            if (!recruiter_id) {
+                throw new Error("Recruiter not logged in.");
+            }
+
             const res = await fetch("/api/query/shortlist", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query: trimmed, limit: 5 }),
+                body: JSON.stringify({ query: trimmed, limit: 5, recruiter_id}),
             });
 
             if (!res.ok) {

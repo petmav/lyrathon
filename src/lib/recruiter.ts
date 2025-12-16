@@ -73,3 +73,38 @@ export async function saveRecruiter(
 
   return result.rows[0];
 }
+
+export async function saveRecruiterQuery(
+  input: {
+    recruiter_id: string;
+    query_text: string;
+    is_assistant: boolean;
+  },
+): Promise<any> {
+    const result = await db.query(
+        `
+        INSERT INTO recruiter_queries (
+            recruiter_id,
+            query_text,
+            is_assistant
+        ) VALUES (
+            $1, $2, $3
+        ) RETURNING *
+        `,
+        [
+            input.recruiter_id,
+            input.query_text,
+            input.is_assistant,
+        ],
+    );
+
+    return result.rows[0];
+}
+
+export async function getRecruiterQueries(recruiterId: string) {
+  const result = await db.query(
+    `SELECT * FROM recruiter_queries WHERE recruiter_id = $1 ORDER BY created_at DESC`,
+    [recruiterId]
+  );
+  return result.rows;
+}

@@ -15,6 +15,7 @@ import {
   isResponseValidationError,
   parseRequestPayload,
 } from '@/lib/validation';
+import { saveRecruiterQuery } from '@/lib/recruiter';
 
 export async function POST(request: Request) {
   try {
@@ -24,6 +25,12 @@ export async function POST(request: Request) {
     );
 
     const started = Date.now();
+    // store body.query in recruiter_queries table
+    saveRecruiterQuery({
+      recruiter_id: body.recruiter_id,
+      query_text: body.query,
+      is_assistant: false,
+    });
     const filters = await extractFiltersFromQuery(body.query);
     const sanitizedFilters = candidateFiltersSchema.parse({
       ...filters,
@@ -53,6 +60,14 @@ export async function POST(request: Request) {
       filters: sanitizedFilters,
       duration_ms: Date.now() - started,
       shortlist_size: shortlist.shortlist.length,
+    });
+    
+    // store responseBody in recruiter_queries table
+    console.log(responseBody);
+    saveRecruiterQuery({
+      recruiter_id: body.recruiter_id,
+      query_text: JSON.stringify(responseBody),
+      is_assistant: true,
     });
 
     return NextResponse.json(responseBody);
