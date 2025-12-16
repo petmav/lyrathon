@@ -103,7 +103,7 @@ export async function saveRecruiterQuery(
 
 export async function getRecruiterQueries(recruiterId: string) {
   const result = await db.query(
-    `SELECT * FROM recruiter_queries WHERE recruiter_id = $1 ORDER BY created_at DESC`,
+    `SELECT * FROM recruiter_queries WHERE recruiter_id = $1 ORDER BY created_at ASC`,
     [recruiterId]
   );
   return result.rows;
