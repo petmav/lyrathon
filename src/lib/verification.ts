@@ -47,21 +47,26 @@ export type VerificationRun = {
   link_overlap_count?: number | null;
 };
 
-export async function queueVerificationForCandidate(candidateId: string) {
+export type VerificationRunType = 'full_profile' | 'resume' | 'transcript' | 'project_links';
+
+export async function queueVerificationForCandidate(
+  candidateId: string,
+  runType: VerificationRunType = 'full_profile',
+) {
   const payload = await buildCandidatePayload(candidateId);
   if (!payload) {
     return null;
   }
 
-  const inputHash = hashPayload(payload);
+  const inputHash = hashPayload({ runType, payload });
 
   const existing = await db.query<VerificationRun>(
     `SELECT verification_id, candidate_id, run_type, status, confidence, rationale, input_hash
      FROM verification_runs
-     WHERE candidate_id = $1 AND input_hash = $2 AND status IN ('succeeded', 'processing')
+     WHERE candidate_id = $1 AND input_hash = $2 AND run_type = $3 AND status IN ('queued', 'processing', 'succeeded')
      ORDER BY created_at DESC
      LIMIT 1`,
-    [candidateId, inputHash],
+    [candidateId, inputHash, runType],
   );
 
   if (existing.rowCount) {
@@ -70,10 +75,10 @@ export async function queueVerificationForCandidate(candidateId: string) {
 
   const inserted = await db.query<VerificationRun>(
     `INSERT INTO verification_runs (candidate_id, run_type, status, input_hash)
-     VALUES ($1, 'full_profile', 'queued', $2)
+     VALUES ($1, $2, 'queued', $3)
      ON CONFLICT DO NOTHING
      RETURNING verification_id, candidate_id, run_type, status, confidence, rationale, input_hash`,
-    [candidateId, inputHash],
+    [candidateId, runType, inputHash],
   );
 
   return inserted.rows[0] ?? null;
@@ -106,7 +111,11 @@ export async function processNextVerificationRun() {
     );
     await client.query('COMMIT');
 
-    const result = await processVerificationRun(run.verification_id, run.candidate_id);
+    const result = await processVerificationRun(
+      run.verification_id,
+      run.candidate_id,
+      run.run_type as VerificationRunType,
+    );
     return { processed: true, run: result } as const;
   } catch (error) {
     await client.query('ROLLBACK');
@@ -116,14 +125,101 @@ export async function processNextVerificationRun() {
   }
 }
 
-async function processVerificationRun(verificationId: string, candidateId: string) {
+// Helper to process multiple queued runs in sequence without holding a single transaction.
+export async function processQueuedVerifications(limit = 5) {
+  for (let i = 0; i < limit; i += 1) {
+    const result = await processNextVerificationRun();
+    if (!result.processed) break;
+  }
+}
+
+async function hasSuccessfulRun(candidateId: string, runType: VerificationRunType) {
+  const res = await db.query(
+    `SELECT 1 FROM verification_runs
+     WHERE candidate_id = $1 AND run_type = $2 AND status = 'succeeded'
+     LIMIT 1`,
+    [candidateId, runType],
+  );
+  return Boolean(res.rowCount);
+}
+
+async function hasActiveRun(candidateId: string, runType: VerificationRunType) {
+  const res = await db.query(
+    `SELECT 1 FROM verification_runs
+     WHERE candidate_id = $1
+       AND run_type = $2
+       AND status IN ('queued', 'processing', 'succeeded')
+     LIMIT 1`,
+    [candidateId, runType],
+  );
+  return Boolean(res.rowCount);
+}
+
+async function queueIfReady(
+  candidateId: string,
+  runType: VerificationRunType,
+  ready: boolean,
+) {
+  if (!ready) return false;
+  const alreadyActive = await hasActiveRun(candidateId, runType);
+  if (alreadyActive) return false;
+  const queued = await queueVerificationForCandidate(candidateId, runType);
+  return Boolean(queued);
+}
+
+export async function ensureVerificationRunsForCandidate(candidateId: string) {
+  const payload = await buildCandidatePayload(candidateId);
+  if (!payload) return;
+
+  const hasResumeDoc = payload.documents.some((doc) => doc.type === 'resume');
+  const hasTranscriptDoc = payload.documents.some(
+    (doc) => doc.type === 'transcript' || doc.type === 'other',
+  );
+
+  const projectLinks = extractLinksFromText(String(payload.candidate.projects_text ?? ''));
+  const portfolioDocLinks = payload.documents
+    .filter((doc) => doc.type === 'portfolio')
+    .map((doc) => normalizeLink(doc.file_url ?? ''))
+    .filter((v): v is string => Boolean(v));
+  const projectsReady = projectLinks.length > 0 || portfolioDocLinks.length > 0;
+
+  let queuedAny = false;
+  queuedAny ||= await queueIfReady(candidateId, 'resume', hasResumeDoc);
+  queuedAny ||= await queueIfReady(candidateId, 'transcript', hasTranscriptDoc);
+  queuedAny ||= await queueIfReady(candidateId, 'project_links', projectsReady);
+
+  // Only queue the final full_profile when all aspect runs have succeeded.
+  const allSucceeded =
+    (await hasSuccessfulRun(candidateId, 'resume')) &&
+    (await hasSuccessfulRun(candidateId, 'transcript')) &&
+    (await hasSuccessfulRun(candidateId, 'project_links'));
+
+  if (allSucceeded) {
+    queuedAny ||= await queueIfReady(candidateId, 'full_profile', true);
+  }
+
+  if (queuedAny) {
+    // Kick off processing in the background.
+    setTimeout(() => {
+      processQueuedVerifications().catch((err) =>
+        console.error('Verification task failed in ensureVerificationRunsForCandidate', err),
+      );
+    }, 0);
+  }
+}
+
+async function processVerificationRun(
+  verificationId: string,
+  candidateId: string,
+  runType: VerificationRunType,
+) {
   const payload = await buildCandidatePayload(candidateId);
   if (!payload) {
     await markRunFailed(verificationId, 'Candidate not found');
     return null;
   }
 
-  const inputHash = hashPayload(payload);
+  const inputHash = hashPayload({ runType, payload });
   await db.query(
     `UPDATE verification_runs
      SET input_hash = COALESCE(input_hash, $2)
@@ -131,7 +227,7 @@ async function processVerificationRun(verificationId: string, candidateId: strin
     [verificationId, inputHash],
   );
 
-  const assessment = await runVerificationModel(payload);
+  const assessment = await runVerificationModel(payload, runType);
 
   if (!assessment) {
     await markRunFailed(verificationId, 'Verification model unavailable');
@@ -169,7 +265,13 @@ async function processVerificationRun(verificationId: string, candidateId: strin
     verificationId,
     candidateId,
     confidence,
+    runType,
   });
+
+  // Re-evaluate downstream queues after this run completes.
+  ensureVerificationRunsForCandidate(candidateId).catch((err) =>
+    console.error('Post-run ensure failed', err),
+  );
 
   return {
     verification_id: verificationId,
@@ -195,20 +297,48 @@ async function markRunFailed(verificationId: string, reason: string) {
 }
 
 async function recomputeCandidateVerificationScore(candidateId: string) {
-  const agg = await db.query<{ avg: number | null }>(
-    `SELECT AVG(confidence) AS avg
+  // Only set a candidate score when all three aspect runs exist; otherwise null.
+  const aspectRuns = await db.query<{ run_type: string; confidence: number }>(
+    `SELECT DISTINCT ON (run_type) run_type, confidence
      FROM verification_runs
-     WHERE candidate_id = $1 AND status = 'succeeded' AND confidence IS NOT NULL`,
+     WHERE candidate_id = $1
+       AND status = 'succeeded'
+       AND run_type IN ('resume', 'transcript', 'project_links')
+       AND confidence IS NOT NULL
+     ORDER BY run_type, finished_at DESC`,
     [candidateId],
   );
 
-  const avg = agg.rows[0]?.avg ?? 0;
+  const byType = new Map(
+    aspectRuns.rows.map((row) => [row.run_type, Number(row.confidence)] as const),
+  );
+
+  const requiredTypes: VerificationRunType[] = ['resume', 'transcript', 'project_links'];
+  const confidences: number[] = [];
+  for (const rt of requiredTypes) {
+    const val = byType.get(rt);
+    if (val === undefined || Number.isNaN(val)) {
+      await db.query(
+        `UPDATE candidate
+         SET verifiable_confidence_score = NULL,
+             profile_updated_at = now()
+         WHERE candidate_id = $1`,
+        [candidateId],
+      );
+      return;
+    }
+    confidences.push(val);
+  }
+
+  const finalConfidence =
+    confidences.reduce((sum, value) => sum + value, 0) / confidences.length;
+
   await db.query(
     `UPDATE candidate
      SET verifiable_confidence_score = $2,
          profile_updated_at = now()
      WHERE candidate_id = $1`,
-    [candidateId, avg],
+    [candidateId, finalConfidence],
   );
 }
 
@@ -279,18 +409,53 @@ type VerificationAssessment = {
   web_search_used?: boolean;
 };
 
-async function runVerificationModel(payload: CandidatePayload): Promise<VerificationAssessment | null> {
+const RUN_TYPE_ASPECTS: Record<VerificationRunType, string[]> = {
+  full_profile: ['resume', 'education', 'projects'],
+  resume: ['resume'],
+  transcript: ['education'],
+  project_links: ['projects'],
+};
+
+function allowedAspects(runType: VerificationRunType) {
+  return RUN_TYPE_ASPECTS[runType] ?? RUN_TYPE_ASPECTS.full_profile;
+}
+
+function normalizeAspect(aspect: string) {
+  const lower = aspect.toLowerCase();
+  if (lower.includes('project')) return 'projects';
+  if (lower.includes('education') || lower.includes('transcript')) return 'education';
+  return 'resume';
+}
+
+async function runVerificationModel(
+  payload: CandidatePayload,
+  runType: VerificationRunType,
+): Promise<VerificationAssessment | null> {
+  const allowed = allowedAspects(runType);
+
   if (!verificationClient) {
     return {
       overall_confidence: 0.5,
       summary: 'Verification model unavailable; returning neutral confidence.',
-      checks: [
-        { aspect: 'resume', confidence: 0.5, rationale: 'LLM not available' },
-        { aspect: 'education', confidence: 0.5, rationale: 'LLM not available' },
-        { aspect: 'projects', confidence: 0.5, rationale: 'LLM not available' },
-      ],
+      checks: allowed.map((aspect) => ({
+        aspect,
+        confidence: 0.5,
+        rationale: 'LLM not available',
+      })),
     };
   }
+
+  const hasLinks = allowed.includes('projects') && payload.links.submitted.length > 0;
+  const runInstructions: Record<VerificationRunType, string> = {
+    resume:
+      'Review the resume file for credibility and alignment with the candidate profile (exclude projects and transcript/testamur context). Return confidence 0-1 for how well the resume reflects the claimed profile.',
+    transcript:
+      'Review the transcript/testamur file for credibility and alignment with the candidate profile (exclude resume/projects context). Focus on whether education/grades support the claimed profile. Return confidence 0-1.',
+    project_links:
+      'Review the provided project links for credibility and alignment with the candidate profile. Use web_search to validate links and assess whether projects match the claimed skills/roles. Return confidence 0-1.',
+    full_profile:
+      'Review all provided evidence (resume, transcript, projects) for credibility and alignment with the candidate profile. Return confidence 0-1 for overall fit.',
+  };
 
   const response = await verificationClient.responses.create({
     model: VERIFICATION_MODEL,
@@ -300,7 +465,11 @@ async function runVerificationModel(payload: CandidatePayload): Promise<Verifica
         content: [
           {
             type: 'input_text',
-            text: "You are a verification agent. Evaluate whether the candidate's resume, education claims, transcript, and linked projects align. Return JSON with per-aspect confidence (0-1) and an overall confidence."
+            text: [
+              'You are a verification agent. Return JSON with per-aspect confidence (0-1) limited to the target aspects, plus an overall confidence for those aspects only.',
+              runInstructions[runType],
+              'If evidence for a target aspect is missing, state that explicitly instead of inventing details.',
+            ].join(' '),
           },
         ],
       },
@@ -309,13 +478,13 @@ async function runVerificationModel(payload: CandidatePayload): Promise<Verifica
         content: [
           {
             type: 'input_text',
-            text: buildVerificationPrompt(payload),
+            text: buildVerificationPrompt(payload, runType),
           },
         ],
       },
     ],
-    tools: [{ type: 'web_search' }],
-    tool_choice: 'auto',
+    tools: hasLinks ? [{ type: 'web_search' }] : undefined,
+    tool_choice: hasLinks ? 'auto' : 'none',
     text: {
       format: {
         type: 'json_schema',
@@ -330,14 +499,33 @@ async function runVerificationModel(payload: CandidatePayload): Promise<Verifica
 
   try {
     const parsed = JSON.parse(output) as VerificationAssessment;
-    return {
-      overall_confidence: clampConfidence(parsed.overall_confidence),
-      summary: parsed.summary,
-      checks: (parsed.checks || []).map((check) => ({
-        aspect: check.aspect,
+    const filteredChecks = (parsed.checks || [])
+      .map((check) => ({
+        aspect: normalizeAspect(check.aspect),
         confidence: clampConfidence(Number(check.confidence)),
         rationale: check.rationale,
-      })),
+      }))
+      .filter((check) => allowed.includes(check.aspect));
+
+    if (!filteredChecks.length) {
+      allowed.forEach((aspect) =>
+        filteredChecks.push({
+          aspect,
+          confidence: clampConfidence(parsed.overall_confidence ?? 0),
+          rationale: 'Model did not return this aspect; using overall confidence.',
+        }),
+      );
+    }
+
+    const overall =
+      runType === 'full_profile'
+        ? clampConfidence(parsed.overall_confidence)
+        : clampConfidence(filteredChecks[0]?.confidence ?? parsed.overall_confidence);
+
+    return {
+      overall_confidence: overall,
+      summary: parsed.summary,
+      checks: filteredChecks,
       web_search_used: didUseWebSearch(response),
     };
   } catch (error) {
@@ -346,7 +534,7 @@ async function runVerificationModel(payload: CandidatePayload): Promise<Verifica
   }
 }
 
-function buildVerificationPrompt(payload: CandidatePayload): string {
+function buildVerificationPrompt(payload: CandidatePayload, runType: VerificationRunType): string {
   const candidate = payload?.candidate ?? {};
   const docs = payload?.documents ?? [];
   const linkLines = payload.links.submitted.length
@@ -358,19 +546,49 @@ function buildVerificationPrompt(payload: CandidatePayload): string {
         .join(' | ')}`
     : 'Potential duplicate links on other candidates: none detected';
 
-  const docSummary = formatDocumentSummaries(docs);
+  const educationClaims = Array.isArray(candidate.education)
+    ? JSON.stringify(candidate.education, null, 2)
+    : String(candidate.education ?? '[]');
+  const previousPositions = Array.isArray(candidate.previous_positions)
+    ? JSON.stringify(candidate.previous_positions, null, 2)
+    : String(candidate.previous_positions ?? '[]');
+
+  const docsForRun =
+    runType === 'resume'
+      ? docs.filter((d) => d.type === 'resume')
+      : runType === 'transcript'
+        ? docs.filter((d) => d.type === 'transcript' || d.type === 'other')
+        : runType === 'project_links'
+          ? docs.filter((d) => d.type === 'portfolio')
+          : docs;
+
+  const docSummary = formatDocumentSummaries(docsForRun, {
+    defaultWordLimit: 700,
+    perTypeWordLimits: {
+      resume: 700, // ~2 pages
+      transcript: 1400, // ~4 pages
+      other: 1400,
+    },
+  });
+  const includeProjects = runType === 'project_links' || runType === 'full_profile';
+  const includeEducation = runType !== 'project_links';
+
   return [
     `Candidate: ${candidate.name} (${candidate.email})`,
     `Location: ${candidate.location ?? 'n/a'} | Visa: ${candidate.visa_status ?? 'n/a'} | Experience: ${candidate.experience_years ?? 'n/a'} years`,
     `Current role: ${candidate.current_position ?? 'n/a'}`,
     `Skills: ${candidate.skills_text ?? 'n/a'}`,
-    `Projects: ${candidate.projects_text ?? 'n/a'}`,
-    `Education claims: ${candidate.education ?? 'n/a'}`,
+    includeProjects ? `Projects: ${candidate.projects_text ?? 'n/a'}` : undefined,
+    includeEducation ? `Education claims JSON: ${educationClaims}` : undefined,
+    includeEducation ? `Previous positions JSON: ${previousPositions}` : undefined,
     docSummary,
-    linkLines,
-    overlapLines,
-    'Provide per-aspect confidence for resume alignment, education claims, and project links, then an overall confidence. Use web search on provided links if helpful, and note overlaps as potential risk.',
-  ].join('\n');
+    includeProjects ? linkLines : undefined,
+    includeProjects ? overlapLines : undefined,
+    `Target aspects for this run: ${allowedAspects(runType).join(', ')}`,
+    'Provide per-aspect confidence only for the target aspects, then an overall confidence based solely on them. If links exist, try web search before deciding; if no links or search is unavailable, state that explicitly.',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 function extractOutputText(response: Response) {
@@ -421,8 +639,10 @@ async function resolveLinks(
 ) {
   const submitted = [
     ...extractLinksFromText(String(candidate.projects_text ?? '')),
-    ...extractLinksFromText(String(candidate.skills_text ?? '')),
-    ...docs.map((d) => normalizeLink(d.file_url ?? '')).filter((v): v is string => Boolean(v)),
+    ...docs
+      .filter((d) => ['portfolio', 'project_links'].includes(String((d as any).type)))
+      .map((d) => normalizeLink(d.file_url ?? ''))
+      .filter((v): v is string => Boolean(v)),
   ];
 
   const uniqueLinks = Array.from(new Set(submitted));

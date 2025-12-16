@@ -128,6 +128,8 @@ export default function ApplicantFormPage(): JSX.Element {
 
   const [previousPositions, setPreviousPositions] = useState<PreviousPosition[]>([]);
   const [education, setEducation] = useState<EducationEntry[]>([]);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [transcriptFile, setTranscriptFile] = useState<File | null>(null);
   const [openEdit, setOpenEdit] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const filledInputSx = {
@@ -198,6 +200,21 @@ export default function ApplicantFormPage(): JSX.Element {
   }, []);
 
   const router = useRouter();
+  const uploadDocument = async (candidateId: string, file: File | null, type: string) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("candidate_id", candidateId);
+    formData.append("type", type);
+    formData.append("file", file);
+
+    await fetch("/api/candidates/documents", {
+      method: "POST",
+      body: formData,
+    }).catch((err) => {
+      console.error("Document upload failed", err);
+    });
+  };
   const handleLogout = (): void => {
     router.push('/');
     localStorage.removeItem("candidate_id");
@@ -242,6 +259,17 @@ export default function ApplicantFormPage(): JSX.Element {
 
     try {
       const res = await apiCall("/api/candidates/register", "POST", formData);
+      const candidateId =
+        (res as any)?.data?.candidate_id ||
+        localStorage.getItem("candidate_id") ||
+        "";
+
+      if (candidateId) {
+        localStorage.setItem("candidate_id", candidateId);
+        // Upload resume + transcript/testamur if provided
+        await uploadDocument(candidateId, resumeFile, "resume");
+        await uploadDocument(candidateId, transcriptFile, "other");
+      }
       // close modal if open and navigate to details
       setOpenEdit(false);
       console.log(res);
@@ -488,6 +516,30 @@ export default function ApplicantFormPage(): JSX.Element {
                 <div className={styles.modalRow}>
                   <div className={styles.modalLabel}>Availability Date</div>
                   <input type="date" className={styles.modalInput} value={availabilityDate} onChange={(e) => setAvailabilityDate(e.target.value)} disabled={isSaving} />
+                </div>
+
+                <div className={styles.modalRow}>
+                  <div className={styles.modalLabel}>Resume</div>
+                  <input
+                    type="file"
+                    className={styles.modalInput}
+                    accept=".pdf,.txt,.doc,.docx"
+                    onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)}
+                    disabled={isSaving}
+                  />
+                  {resumeFile ? <div style={{ fontSize: 12, opacity: 0.8 }}>Selected: {resumeFile.name}</div> : null}
+                </div>
+
+                <div className={styles.modalRow}>
+                  <div className={styles.modalLabel}>Transcript / Testamur</div>
+                  <input
+                    type="file"
+                    className={styles.modalInput}
+                    accept=".pdf,.txt,.doc,.docx"
+                    onChange={(e) => setTranscriptFile(e.target.files?.[0] ?? null)}
+                    disabled={isSaving}
+                  />
+                  {transcriptFile ? <div style={{ fontSize: 12, opacity: 0.8 }}>Selected: {transcriptFile.name}</div> : null}
                 </div>
 
                 <ChipInput label="Skills" values={skills} setValues={setSkills} disabled={isSaving} />

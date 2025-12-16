@@ -80,6 +80,10 @@ export const candidateInputSchema = z
   })
   .strict();
 
+export const candidateProfileSchema = candidateInputSchema.extend({
+  password_hash: nonEmptyString.optional(),
+});
+
 const nullableText = z.string().min(1).nullable().optional();
 
 const previousPositionsResponseSchema = z.preprocess(
@@ -199,6 +203,7 @@ export const shortlistResponseSchema = z.object({
 });
 
 export type CandidateInputPayload = z.infer<typeof candidateInputSchema>;
+export type CandidateProfilePayload = z.infer<typeof candidateProfileSchema>;
 export type PublicCandidatePayload = z.infer<typeof publicCandidateSchema>;
 export type CandidateFiltersPayload = z.infer<typeof candidateFiltersSchema>;
 export type CandidateSearchResultPayload = z.infer<typeof candidateSearchResultSchema>;

@@ -1,7 +1,8 @@
 import pdfParse from 'pdf-parse';
 
 const DEFAULT_MAX_BYTES = Number(process.env.VERIFICATION_MAX_DOC_BYTES ?? 2_000_000); // ~2MB
-const MAX_PREVIEW_CHARS = 2400;
+// Allow large previews so word-based limits can be applied downstream (resume/testamur caps).
+const MAX_PREVIEW_CHARS = 12_000;
 
 type FetchResult = {
   text: string;
@@ -81,11 +82,25 @@ export async function fetchDocumentText(
 
 export function formatDocumentSummaries(
   docs: { document_id: string; type: string; file_url: string | null; text?: string | null }[],
+  options?: {
+    defaultWordLimit?: number;
+    perTypeWordLimits?: Record<string, number>;
+  },
 ) {
   if (!docs.length) return 'Resume/Portfolio files: none';
 
+  const defaultLimit = options?.defaultWordLimit ?? 800;
+  const perType = options?.perTypeWordLimits ?? {};
+
+  const limitWords = (text: string, maxWords: number) => {
+    const words = text.split(/\s+/).filter(Boolean);
+    if (words.length <= maxWords) return text;
+    return `${words.slice(0, maxWords).join(' ')} …`;
+  };
+
   const parts = docs.map((doc) => {
-    const summary = doc.text ? truncate(doc.text, 320) : 'no text extracted';
+    const maxWords = perType[doc.type] ?? defaultLimit;
+    const summary = doc.text ? limitWords(doc.text, maxWords) : 'no text extracted';
     return `${doc.type}: ${doc.file_url ?? 'n/a'} — ${summary}`;
   });
 
