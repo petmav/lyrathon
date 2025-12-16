@@ -36,6 +36,22 @@ const verificationJsonSchema = {
   required: ['overall_confidence', 'summary', 'checks'],
 } as const;
 
+type CandidatePayload = {
+  candidate: Record<string, unknown>;
+  documents: {
+    document_id: string;
+    type: string;
+    file_url: string | null;
+    checksum: string | null;
+    is_primary: boolean;
+    text?: string | null;
+  }[];
+  links: {
+    submitted: string[];
+    duplicates: { link: string; candidate_id: string; candidate_name: string }[];
+  };
+};
+
 export type VerificationRun = {
   verification_id: string;
   candidate_id: string;
@@ -49,16 +65,86 @@ export type VerificationRun = {
 
 export type VerificationRunType = 'full_profile' | 'resume' | 'transcript' | 'project_links';
 
+function aspectHashPayload(payload: CandidatePayload, runType: VerificationRunType) {
+  const candidate = payload.candidate ?? {};
+  const pick = (obj: Record<string, unknown>, keys: string[]) =>
+    keys.reduce<Record<string, unknown>>((acc, key) => {
+      if (key in obj) acc[key] = obj[key];
+      return acc;
+    }, {});
+
+  const docsFor = (types: string[]) =>
+    payload.documents
+      .filter((d) => types.includes(d.type))
+      .map((d) => ({
+        document_id: d.document_id,
+        type: d.type,
+        checksum: d.checksum,
+        file_url: d.file_url,
+        is_primary: d.is_primary,
+      }));
+
+  if (runType === 'resume') {
+    return {
+      candidate: pick(candidate, [
+        'name',
+        'email',
+        'age',
+        'current_position',
+        'location',
+        'visa_status',
+        'experience_years',
+        'salary_expectation',
+        'availability_date',
+        'skills_text',
+        'awards_text',
+        'certifications_text',
+        'previous_positions',
+      ]),
+      documents: docsFor(['resume']),
+    };
+  }
+
+  if (runType === 'transcript') {
+    return {
+      candidate: pick(candidate, ['education']),
+      documents: docsFor(['transcript', 'other']),
+    };
+  }
+
+  if (runType === 'project_links') {
+    return {
+      candidate: pick(candidate, ['projects_text', 'skills_text']),
+      links: payload.links.submitted,
+      documents: docsFor(['portfolio', 'project_links']),
+    };
+  }
+
+  // full_profile
+  return {
+    candidate,
+    documents: payload.documents.map((d) => ({
+      document_id: d.document_id,
+      type: d.type,
+      checksum: d.checksum,
+      file_url: d.file_url,
+      is_primary: d.is_primary,
+    })),
+    links: payload.links.submitted,
+  };
+}
+
 export async function queueVerificationForCandidate(
   candidateId: string,
   runType: VerificationRunType = 'full_profile',
+  payloadOverride?: CandidatePayload,
 ) {
-  const payload = await buildCandidatePayload(candidateId);
+  const payload = payloadOverride ?? (await buildCandidatePayload(candidateId));
   if (!payload) {
     return null;
   }
 
-  const inputHash = hashPayload({ runType, payload });
+  const inputHash = hashPayload({ runType, payload: aspectHashPayload(payload, runType) });
 
   const existing = await db.query<VerificationRun>(
     `SELECT verification_id, candidate_id, run_type, status, confidence, rationale, input_hash
@@ -160,22 +246,40 @@ async function hasActiveRun(candidateId: string, runType: VerificationRunType) {
     `SELECT 1 FROM verification_runs
      WHERE candidate_id = $1
        AND run_type = $2
-       AND status IN ('queued', 'processing', 'succeeded')
+       AND status IN ('queued', 'processing')
      LIMIT 1`,
     [candidateId, runType],
   );
   return Boolean(res.rowCount);
 }
 
+async function latestSucceededRun(candidateId: string, runType: VerificationRunType) {
+  const res = await db.query<VerificationRun>(
+    `SELECT verification_id, input_hash
+     FROM verification_runs
+     WHERE candidate_id = $1 AND run_type = $2 AND status = 'succeeded'
+     ORDER BY finished_at DESC
+     LIMIT 1`,
+    [candidateId, runType],
+  );
+  return res.rows[0] ?? null;
+}
+
 async function queueIfReady(
   candidateId: string,
   runType: VerificationRunType,
   ready: boolean,
+  currentHash: string,
+  payload?: CandidatePayload,
 ) {
   if (!ready) return false;
   const alreadyActive = await hasActiveRun(candidateId, runType);
   if (alreadyActive) return false;
-  const queued = await queueVerificationForCandidate(candidateId, runType);
+
+  const last = await latestSucceededRun(candidateId, runType);
+  if (last && last.input_hash === currentHash) return false;
+
+  const queued = await queueVerificationForCandidate(candidateId, runType, payload);
   return Boolean(queued);
 }
 
@@ -193,12 +297,30 @@ export async function ensureVerificationRunsForCandidate(candidateId: string) {
     .filter((doc) => doc.type === 'portfolio')
     .map((doc) => normalizeLink(doc.file_url ?? ''))
     .filter((v): v is string => Boolean(v));
-  const projectsReady = projectLinks.length > 0 || portfolioDocLinks.length > 0;
+  const projectsReady =
+    projectLinks.length > 0 ||
+    portfolioDocLinks.length > 0 ||
+    Boolean(String(payload.candidate.projects_text ?? '').trim());
 
   let queuedAny = false;
-  queuedAny ||= await queueIfReady(candidateId, 'resume', hasResumeDoc);
-  queuedAny ||= await queueIfReady(candidateId, 'transcript', hasTranscriptDoc);
-  queuedAny ||= await queueIfReady(candidateId, 'project_links', projectsReady);
+  const currentHashes: Record<VerificationRunType, string> = {
+    resume: hashPayload({ runType: 'resume', payload: aspectHashPayload(payload, 'resume') }),
+    transcript: hashPayload({ runType: 'transcript', payload: aspectHashPayload(payload, 'transcript') }),
+    project_links: hashPayload({ runType: 'project_links', payload: aspectHashPayload(payload, 'project_links') }),
+    full_profile: hashPayload({ runType: 'full_profile', payload: aspectHashPayload(payload, 'full_profile') }),
+  };
+
+  const lastResume = await latestSucceededRun(candidateId, 'resume');
+  const lastTranscript = await latestSucceededRun(candidateId, 'transcript');
+  const lastProjects = await latestSucceededRun(candidateId, 'project_links');
+
+  const resumeReady = hasResumeDoc || Boolean(lastResume);
+  const transcriptReady = hasTranscriptDoc || Boolean(lastTranscript);
+  const projectsReadyFlag = projectsReady || Boolean(lastProjects);
+
+  queuedAny ||= await queueIfReady(candidateId, 'resume', resumeReady, currentHashes.resume, payload);
+  queuedAny ||= await queueIfReady(candidateId, 'transcript', transcriptReady, currentHashes.transcript, payload);
+  queuedAny ||= await queueIfReady(candidateId, 'project_links', projectsReadyFlag, currentHashes.project_links, payload);
 
   // Only queue the final full_profile when all aspect runs have succeeded.
   const allSucceeded =
@@ -207,7 +329,10 @@ export async function ensureVerificationRunsForCandidate(candidateId: string) {
     (await hasSuccessfulRun(candidateId, 'project_links'));
 
   if (allSucceeded) {
-    queuedAny ||= await queueIfReady(candidateId, 'full_profile', true);
+    const lastFull = await latestSucceededRun(candidateId, 'full_profile');
+    if (!lastFull || lastFull.input_hash !== currentHashes.full_profile) {
+      queuedAny ||= await queueIfReady(candidateId, 'full_profile', true, currentHashes.full_profile, payload);
+    }
   }
 
   if (queuedAny) {
@@ -231,7 +356,7 @@ async function processVerificationRun(
     return null;
   }
 
-  const inputHash = hashPayload({ runType, payload });
+  const inputHash = hashPayload({ runType, payload: aspectHashPayload(payload, runType) });
   await db.query(
     `UPDATE verification_runs
      SET input_hash = COALESCE(input_hash, $2)
@@ -360,15 +485,6 @@ function clampConfidence(value: number) {
   return Math.min(Math.max(value, 0), 1);
 }
 
-type CandidatePayload = {
-  candidate: Record<string, unknown>;
-  documents: { document_id: string; type: string; file_url: string | null; checksum: string | null; is_primary: boolean; text?: string | null }[];
-  links: {
-    submitted: string[];
-    duplicates: { link: string; candidate_id: string; candidate_name: string }[];
-  };
-};
-
 async function buildCandidatePayload(candidateId: string): Promise<CandidatePayload | null> {
   const candidateResult = await db.query(
     `SELECT candidate_id, name, age, email, current_position, location, visa_status, experience_years,
@@ -385,12 +501,32 @@ async function buildCandidatePayload(candidateId: string): Promise<CandidatePayl
     `SELECT document_id, type, file_url, checksum, is_primary
      FROM candidate_documents
      WHERE candidate_id = $1
-     ORDER BY created_at ASC`,
+     ORDER BY created_at DESC`,
     [candidateId],
   );
 
+  // Always include the newest document per type, then fill with additional recents up to a safe cap.
+  const selectDocsForVerification = (rows: typeof docs.rows) => {
+    const byType = new Map<string, (typeof docs.rows)[number]>();
+    for (const doc of rows) {
+      if (!byType.has(doc.type)) {
+        byType.set(doc.type, doc);
+      }
+    }
+    const selected: (typeof docs.rows)[number][] = Array.from(byType.values());
+    for (const doc of rows) {
+      if (selected.length >= 12) break;
+      if (!selected.includes(doc)) {
+        selected.push(doc);
+      }
+    }
+    return selected;
+  };
+
+  const docsForVerification = selectDocsForVerification(docs.rows);
+
   const hydratedDocs = await Promise.all(
-    docs.rows.slice(0, 5).map(async (doc) => {
+    docsForVerification.map(async (doc) => {
       const text = await getDocumentTextWithCache(doc);
       if (text?.text) {
         await logEvent('info', 'verification.document.text_extracted', {
@@ -501,7 +637,8 @@ async function runVerificationModel(
     };
   }
 
-  const hasLinks = allowed.includes('projects') && payload.links.submitted.length > 0;
+  // Use web search only for project_links runs to avoid long-running full_profile calls.
+  const hasLinks = runType === 'project_links' && payload.links.submitted.length > 0;
   const runInstructions: Record<VerificationRunType, string> = {
     resume:
       'Review the resume file for credibility and alignment with the candidate profile (exclude projects and transcript/testamur context). Return confidence 0-1 for how well the resume reflects the claimed profile.',
@@ -514,7 +651,7 @@ async function runVerificationModel(
   };
 
   const callModel = async () => {
-    const timeoutMs = 45_000;
+    const timeoutMs = 60_000;
     const call = verificationClient.responses.create({
       model: VERIFICATION_MODEL,
       input: [
@@ -560,60 +697,64 @@ async function runVerificationModel(
     ]);
   };
 
-  let response: Response | null = null;
-  let attempts = 0;
-  const maxAttempts = 2;
-  while (attempts < maxAttempts && !response) {
+  const maxAttempts = 3;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    let response: Response | null = null;
     try {
       response = await callModel();
     } catch (err) {
-      attempts += 1;
-      if (attempts >= maxAttempts) {
+      if (attempt === maxAttempts - 1) {
         console.error('Verification model failed', err);
         return null;
       }
-    }
-  }
-  if (!response) return null;
-
-  const output = extractOutputText(response);
-  if (!output) return null;
-
-  try {
-    const parsed = JSON.parse(output) as VerificationAssessment;
-    const filteredChecks = (parsed.checks || [])
-      .map((check) => ({
-        aspect: normalizeAspect(check.aspect),
-        confidence: clampConfidence(Number(check.confidence)),
-        rationale: check.rationale,
-      }))
-      .filter((check) => allowed.includes(check.aspect));
-
-    if (!filteredChecks.length) {
-      allowed.forEach((aspect) =>
-        filteredChecks.push({
-          aspect,
-          confidence: clampConfidence(parsed.overall_confidence ?? 0),
-          rationale: 'Model did not return this aspect; using overall confidence.',
-        }),
-      );
+      continue;
     }
 
-    const overall =
-      runType === 'full_profile'
-        ? clampConfidence(parsed.overall_confidence)
-        : clampConfidence(filteredChecks[0]?.confidence ?? parsed.overall_confidence);
+    if (!response) continue;
+    const output = extractOutputText(response);
+    if (!output) {
+      if (attempt === maxAttempts - 1) return null;
+      continue;
+    }
 
-    return {
-      overall_confidence: overall,
-      summary: parsed.summary,
-      checks: filteredChecks,
-      web_search_used: didUseWebSearch(response),
-    };
-  } catch (error) {
-    console.error('Failed to parse verification output', error, output);
-    return null;
+    try {
+      const parsed = JSON.parse(output) as VerificationAssessment;
+      const filteredChecks = (parsed.checks || [])
+        .map((check) => ({
+          aspect: normalizeAspect(check.aspect),
+          confidence: clampConfidence(Number(check.confidence)),
+          rationale: check.rationale,
+        }))
+        .filter((check) => allowed.includes(check.aspect));
+
+      if (!filteredChecks.length) {
+        allowed.forEach((aspect) =>
+          filteredChecks.push({
+            aspect,
+            confidence: clampConfidence(parsed.overall_confidence ?? 0),
+            rationale: 'Model did not return this aspect; using overall confidence.',
+          }),
+        );
+      }
+
+      const overall =
+        runType === 'full_profile'
+          ? clampConfidence(parsed.overall_confidence)
+          : clampConfidence(filteredChecks[0]?.confidence ?? parsed.overall_confidence);
+
+      return {
+        overall_confidence: overall,
+        summary: parsed.summary,
+        checks: filteredChecks,
+        web_search_used: didUseWebSearch(response),
+      };
+    } catch (error) {
+      console.error('Failed to parse verification output', error, output);
+      if (attempt === maxAttempts - 1) return null;
+      // retry next loop
+    }
   }
+  return null;
 }
 
 function buildVerificationPrompt(payload: CandidatePayload, runType: VerificationRunType): string {

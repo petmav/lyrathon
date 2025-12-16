@@ -1,6 +1,6 @@
 "use client";
 
-import { JSX, SyntheticEvent, useState, useEffect, useRef } from "react";
+import { JSX, SyntheticEvent, useState, useEffect, useRef, useCallback } from "react";
 import { Box } from "@mui/material";
 import { apiCall } from "@/lib/utils";
 import Link from "next/link";
@@ -145,98 +145,136 @@ export default function ApplicantFormPage(): JSX.Element {
   const projectsRef = useRef<HTMLDivElement | null>(null);
   const educationRef = useRef<HTMLDivElement | null>(null);
   const experienceRef = useRef<HTMLDivElement | null>(null);
+  const pendingRefresh = useRef<NodeJS.Timeout | null>(null);
   const filledInputSx = {
     '& .MuiFilledInput-root': { background: 'rgba(255,255,255,0.04)', color: 'white' },
     '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
     '& .MuiFilledInput-root:before': { borderBottomColor: 'rgba(255,255,255,0.06)' },
   };
-  useEffect(() => {
+
+  const selectLatestDoc = (docs: any[], types: string[]) => {
+    const filtered = docs.filter((d) => types.includes(d.type));
+    if (!filtered.length) return null;
+    return filtered.reduce((latest, doc) => {
+      const time = new Date(doc.updated_at ?? doc.created_at ?? 0).getTime();
+      const latestTime = new Date(latest.updated_at ?? latest.created_at ?? 0).getTime();
+      return time > latestTime ? doc : latest;
+    }, filtered[0]);
+  };
+
+  const selectLatestRun = (runs: any[], type: string) => {
+    const filtered = runs.filter((r) => r.run_type === type);
+    if (!filtered.length) return null;
+    return filtered.reduce((latest, run) => {
+      const time = new Date(run.updated_at ?? run.finished_at ?? 0).getTime();
+      const latestTime = new Date(latest.updated_at ?? latest.finished_at ?? 0).getTime();
+      return time > latestTime ? run : latest;
+    }, filtered[0]);
+  };
+
+  const fetchCandidate = useCallback(async () => {
     try {
       const candidateId = localStorage.getItem("candidate_id");
-      if (!candidateId) return; // nothing to fetch
+      if (!candidateId) return;
 
-      apiCall("/api/candidates", "GET", { candidate_id: candidateId })
-        .then((res: any) => {
-            console.log(res.data)
-          const candidate = res.data;
-          if (!candidate) return;
+      const res: any = await apiCall("/api/candidates", "GET", { candidate_id: candidateId });
+      const candidate = res.data;
+      if (!candidate) return;
 
-          if (candidate.name) setName(candidate.name);
-          if (candidate.email) setEmail(candidate.email);
-          if (candidate.age !== undefined && candidate.age !== null) setAge(String(candidate.age));
-          setCurrentPosition(candidate.current_position || "");
-          setIsEmployed(
-            Boolean(candidate.current_position) &&
-              candidate.current_position !== "Not employed",
-          );
-          setLocation(candidate.location || "");
-          setVisaStatus(candidate.visa_status || "");
-          setExperienceYears(candidate.experience_years ? String(candidate.experience_years) : "");
-          setSalaryExpectation(candidate.salary_expectation ? String(candidate.salary_expectation) : "");
-          setAvailabilityDate(candidate.availability_date || "");
+      if (candidate.name) setName(candidate.name);
+      if (candidate.email) setEmail(candidate.email);
+      if (candidate.age !== undefined && candidate.age !== null) setAge(String(candidate.age));
+      setCurrentPosition(candidate.current_position || "");
+      setIsEmployed(
+        Boolean(candidate.current_position) &&
+          candidate.current_position !== "Not employed",
+      );
+      setLocation(candidate.location || "");
+      setVisaStatus(candidate.visa_status || "");
+      setExperienceYears(candidate.experience_years ? String(candidate.experience_years) : "");
+      setSalaryExpectation(candidate.salary_expectation ? String(candidate.salary_expectation) : "");
+      setAvailabilityDate(candidate.availability_date || "");
 
-          if (candidate.skills_text) {
-            setSkills(String(candidate.skills_text).split(",").map((s: string) => s.trim()).filter(Boolean));
-          }
-          if (candidate.awards_text) {
-            setAwards(String(candidate.awards_text).split(",").map((s: string) => s.trim()).filter(Boolean));
-          }
-          if (candidate.certifications_text) {
-            setCertifications(String(candidate.certifications_text).split(",").map((s: string) => s.trim()).filter(Boolean));
-          }
+      if (candidate.skills_text) {
+        setSkills(String(candidate.skills_text).split(",").map((s: string) => s.trim()).filter(Boolean));
+      }
+      if (candidate.awards_text) {
+        setAwards(String(candidate.awards_text).split(",").map((s: string) => s.trim()).filter(Boolean));
+      }
+      if (candidate.certifications_text) {
+        setCertifications(String(candidate.certifications_text).split(",").map((s: string) => s.trim()).filter(Boolean));
+      }
 
-          if (candidate.projects_text) {
-            const projectsArr = String(candidate.projects_text)
-              .split("|")
-              .map((p) => p.trim())
-              .filter(Boolean)
-              .map((p) => {
-                const titleMatch = p.match(/Project title:\s*([^,]+)/i);
-                const descMatch = p.match(/Project Description:\s*(.*)/i);
-                const title = titleMatch ? titleMatch[1].trim() : p;
-                const description = descMatch ? descMatch[1].trim() : "";
-                return { title, description };
-              });
-            setProjects(projectsArr);
-          }
+      if (candidate.projects_text) {
+        const projectsArr = String(candidate.projects_text)
+          .split("|")
+          .map((p) => p.trim())
+          .filter(Boolean)
+          .map((p) => {
+            const titleMatch = p.match(/Project title:\s*([^,]+)/i);
+            const descMatch = p.match(/Project Description:\s*(.*)/i);
+            const title = titleMatch ? titleMatch[1].trim() : p;
+            const description = descMatch ? descMatch[1].trim() : "";
+            return { title, description };
+          });
+        setProjects(projectsArr);
+      }
 
-          if (candidate.previous_positions && Array.isArray(candidate.previous_positions)) {
-            setPreviousPositions(candidate.previous_positions);
-          }
+      if (candidate.previous_positions && Array.isArray(candidate.previous_positions)) {
+        setPreviousPositions(candidate.previous_positions);
+      }
 
-          if (candidate.education && Array.isArray(candidate.education)) {
-            setEducation(candidate.education);
-          }
-          setHeroPulse(true);
+      if (candidate.education && Array.isArray(candidate.education)) {
+        setEducation(candidate.education);
+      }
+      setHeroPulse(true);
 
-          const docs = (candidate as any).documents ?? [];
-          const resumeDoc = docs.find((d: any) => d.type === 'resume');
-          if (resumeDoc) {
-            const parts = String(resumeDoc.file_url ?? '').split('/');
-            setResumeLabel(parts[parts.length - 1] || 'Resume');
-          }
-          const transcriptDoc = docs.find((d: any) => d.type === 'transcript' || d.type === 'other');
-          if (transcriptDoc) {
-            const parts = String(transcriptDoc.file_url ?? '').split('/');
-            setTranscriptLabel(parts[parts.length - 1] || 'Transcript');
-          }
-          const verifications = (candidate as any).verifications ?? [];
-          const resumeRun = verifications.find((v: any) => v.run_type === 'resume');
-          const transcriptRun = verifications.find((v: any) => v.run_type === 'transcript');
-          const projectRun = verifications.find((v: any) => v.run_type === 'project_links');
-          const fullRun = verifications.find((v: any) => v.run_type === 'full_profile');
-          setResumeConfidence(resumeRun?.confidence ?? null);
-          setTranscriptConfidence(transcriptRun?.confidence ?? null);
-          setProjectsConfidence(projectRun?.confidence ?? null);
-          setAggregateConfidence(fullRun?.confidence ?? null);
-        })
-        .catch((err: any) => {
-          console.error("Failed to fetch candidate data:", err);
-        });
+      const docs = (candidate as any).documents ?? [];
+      const resumeDoc = selectLatestDoc(docs, ['resume']);
+      if (resumeDoc) {
+        const parts = String(resumeDoc.file_url ?? '').split('/');
+        setResumeLabel(parts[parts.length - 1] || 'Resume');
+      }
+      const transcriptDoc = selectLatestDoc(docs, ['transcript', 'other']);
+      if (transcriptDoc) {
+        const parts = String(transcriptDoc.file_url ?? '').split('/');
+        setTranscriptLabel(parts[parts.length - 1] || 'Transcript');
+      }
+      const verifications = (candidate as any).verifications ?? [];
+      const resumeRun = selectLatestRun(verifications, 'resume');
+      const transcriptRun = selectLatestRun(verifications, 'transcript');
+      const projectRun = selectLatestRun(verifications, 'project_links');
+      const fullRun = selectLatestRun(verifications, 'full_profile');
+      setResumeConfidence(resumeRun?.confidence ?? null);
+      setTranscriptConfidence(transcriptRun?.confidence ?? null);
+      setProjectsConfidence(projectRun?.confidence ?? null);
+      setAggregateConfidence(fullRun?.confidence ?? null);
+
+      const hasPending = verifications.some(
+        (v: any) => v.status === 'queued' || v.status === 'processing',
+      );
+      if (pendingRefresh.current) {
+        clearTimeout(pendingRefresh.current);
+        pendingRefresh.current = null;
+      }
+      if (hasPending) {
+        pendingRefresh.current = setTimeout(() => {
+          fetchCandidate();
+        }, 3500);
+      }
     } catch (err) {
-      console.error("Error reading candidate_id from localStorage:", err);
+      console.error("Failed to fetch candidate data:", err);
     }
   }, []);
+
+  useEffect(() => {
+    fetchCandidate();
+    return () => {
+      if (pendingRefresh.current) {
+        clearTimeout(pendingRefresh.current);
+      }
+    };
+  }, [fetchCandidate]);
 
   const router = useRouter();
   const uploadDocument = async (candidateId: string, file: File | null, type: string) => {
@@ -296,23 +334,49 @@ export default function ApplicantFormPage(): JSX.Element {
       education,
     };
 
-    try {
-      const res = await apiCall("/api/candidates/register", "POST", formData);
-      const candidateId =
-        (res as any)?.data?.candidate_id ||
-        localStorage.getItem("candidate_id") ||
-        "";
+    const existingCandidateId = localStorage.getItem("candidate_id") || "";
+    let candidateId = existingCandidateId;
 
+    // If the user is only updating docs and we already have a candidate_id, skip the profile re-save to avoid duplicate inserts.
+    const docsOnlyUpdate = activePanel === "docs" && !!existingCandidateId;
+
+    if (!docsOnlyUpdate) {
+      try {
+        const res = await apiCall("/api/candidates/register", "POST", formData);
+        candidateId =
+          (res as any)?.data?.candidate_id ||
+          localStorage.getItem("candidate_id") ||
+          existingCandidateId;
+        if (candidateId) {
+          localStorage.setItem("candidate_id", candidateId);
+        }
+        console.log(res);
+      } catch (err) {
+        if (!existingCandidateId) {
+          console.log(err);
+          setIsSaving(false);
+          return;
+        }
+        console.warn("Profile save failed, continuing with doc upload using existing candidate_id:", err);
+      }
+    }
+
+    try {
       if (candidateId) {
-        localStorage.setItem("candidate_id", candidateId);
-        // Upload resume + transcript/testamur if provided
         await uploadDocument(candidateId, resumeFile, "resume");
         await uploadDocument(candidateId, transcriptFile, "other");
+        await fetchCandidate();
+        setResumeFile(null);
+        setTranscriptFile(null);
+        // schedule a follow-up refresh to capture async verification completions
+        if (pendingRefresh.current) clearTimeout(pendingRefresh.current);
+        pendingRefresh.current = setTimeout(() => {
+          fetchCandidate();
+        }, 4000);
       }
       setActivePanel(null);
-      console.log(res);
     } catch (err) {
-      console.log(err);
+      console.log("Document upload failed", err);
     } finally {
       setIsSaving(false);
     }
