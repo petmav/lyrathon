@@ -1,4 +1,5 @@
 "use client"
+
 import { useState, FormEvent } from "react";
 import {
   Box,
@@ -13,52 +14,49 @@ import { useRouter } from "next/navigation";
 
 const highlights = [
   {
-    title: "Deterministic filters",
-    body: "Visa, location, salary, availability handled in SQL before LLM spend.",
+    title: "Advanced Candidate Search",
+    body: "Leverage powerful filters and AI-driven insights to find the perfect match for your roles.",
   },
   {
-    title: "Evidence-first shortlists",
-    body: "Every match comes with rationale, risks, and next actions.",
+    title: "Streamlined Shortlisting",
+    body: "Easily manage and organize shortlisted candidates for efficient decision-making.",
   },
   {
-    title: "Shareable outputs",
-    body: "Export-ready cards to drop into hiring funnels or send to teams.",
+    title: "Real-Time Collaboration",
+    body: "Work seamlessly with your team to evaluate and track candidates in one unified platform.",
   },
 ];
 
-export default function RecruiterRegisterPage() {
-  const [name, setName] = useState("");
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const passwordsMatch = password === confirmPassword;
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!passwordsMatch) return;
-
     setLoading(true);
+
     try {
-      // On success, redirect to login
-      const res = await fetch("/api/register/recruiter", {
+      const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ email, password }),
       });
-      console.log(res)
+      
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error ?? "Registration failed");
+        setError(data?.error ?? "Login failed");
         setLoading(false);
         return;
       }
       localStorage.setItem("recruiter_id", data.recruiter_id);
+      console.log(data);
+
+      // on success redirect to home (or wherever you want)
       router.push("/recruiter_query_page");
     } catch (err) {
       setError("Network error");
@@ -88,7 +86,6 @@ export default function RecruiterRegisterPage() {
           display: "grid",
           gridTemplateColumns: { xs: "1fr", md: "1.1fr 0.9fr" },
           gap: { xs: 3, md: 4 },
-          alignItems: "start",
         }}
       >
         <Box
@@ -137,7 +134,7 @@ export default function RecruiterRegisterPage() {
                 Linkdr
               </Typography>
               <Typography variant="body2" sx={{ color: "#b7c2d9" }}>
-                Recruiter console
+                Secure sign-in
               </Typography>
             </Box>
           </Box>
@@ -148,11 +145,10 @@ export default function RecruiterRegisterPage() {
               fontWeight={800}
               sx={{ letterSpacing: -0.4, lineHeight: 1.1 }}
             >
-              Spin up a recruiter workspace in seconds.
+              Welcome back, Recruiter.
             </Typography>
-            <Typography variant="body1" sx={{ color: "#b7c2d9", maxWidth: 540 }}>
-              One login to parse natural-language briefs, enforce hard filters, and deliver
-              ranked, explainable shortlists you can share with hiring managers.
+            <Typography variant="body1" sx={{ color: "#b7c2d9", maxWidth: 520 }}>
+              Log in to access your recruiter dashboard, search candidates with ease, and streamline your hiring process.
             </Typography>
           </Box>
 
@@ -171,8 +167,9 @@ export default function RecruiterRegisterPage() {
                   border: "1px solid rgba(255,255,255,0.12)",
                   background: "rgba(255,255,255,0.04)",
                   p: 2,
+                  minHeight: 120,
                   display: "grid",
-                  alignContent: "start",
+                  alignContent: "space-between",
                   gap: 1,
                 }}
               >
@@ -208,40 +205,21 @@ export default function RecruiterRegisterPage() {
         >
           <Box sx={{ display: "grid", gap: 0.5, mb: 3 }}>
             <Typography variant="overline" sx={{ letterSpacing: 1.2, color: "#9a6bff" }}>
-              For recruiters
+              Welcome back
             </Typography>
             <Typography variant="h5" fontWeight={700}>
-              Create a recruiter account
+              Sign in to Linkdr
             </Typography>
             <Typography variant="body2" sx={{ color: "#b7c2d9" }}>
-              Access the console, run semantic queries, and share shortlists with your team.
+              Keep momentum on applications and recruiter conversations.
             </Typography>
           </Box>
 
           <Box
             component="form"
             onSubmit={handleSubmit}
-            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+            sx={{ gap: 2, display: "flex", flexDirection: "column" }}
           >
-            <TextField
-              label="Full name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              fullWidth
-              InputLabelProps={{ sx: { color: "#b7c2d9" } }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  background: "rgba(255,255,255,0.04)",
-                  borderRadius: 2,
-                  color: "#e8edf5",
-                  "& fieldset": { borderColor: "rgba(255,255,255,0.12)" },
-                  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.35)" },
-                  "&.Mui-focused fieldset": { borderColor: "#9a6bff" },
-                },
-              }}
-            />
-
             <TextField
               label="Email"
               type="email"
@@ -282,37 +260,11 @@ export default function RecruiterRegisterPage() {
               }}
             />
 
-            <TextField
-              label="Confirm password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              error={!passwordsMatch && confirmPassword.length > 0}
-              helperText={
-                !passwordsMatch && confirmPassword.length > 0
-                  ? "Passwords do not match"
-                  : ""
-              }
-              required
-              fullWidth
-              InputLabelProps={{ sx: { color: "#b7c2d9" } }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  background: "rgba(255,255,255,0.04)",
-                  borderRadius: 2,
-                  color: "#e8edf5",
-                  "& fieldset": { borderColor: "rgba(255,255,255,0.12)" },
-                  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.35)" },
-                  "&.Mui-focused fieldset": { borderColor: "#9a6bff" },
-                },
-              }}
-            />
-
             <Button
               type="submit"
               variant="contained"
               size="large"
-              disabled={loading || !passwordsMatch}
+              disabled={loading}
               sx={{
                 mt: 1,
                 borderRadius: 999,
@@ -327,9 +279,10 @@ export default function RecruiterRegisterPage() {
                 },
               }}
             >
-              {loading ? <CircularProgress size={22} sx={{ color: "#050712" }} /> : "Create account"}
+              {loading ? <CircularProgress size={22} sx={{ color: "#050712" }} /> : "Sign in"}
             </Button>
           </Box>
+
           {error && (
             <Typography variant="body2" color="error" align="center" sx={{ mt: 2 }}>
               {error}
@@ -340,9 +293,9 @@ export default function RecruiterRegisterPage() {
             variant="body2"
             sx={{ color: "#b7c2d9", mt: 3, textAlign: "center" }}
           >
-            Already registered?{" "}
-            <Link href={"/login/recruiter"} style={{ color: "#9a6bff", fontWeight: 700 }}>
-              Sign in
+            Don’t have an account?{" "}
+            <Link href={"/register/recruiter"} style={{ color: "#9a6bff", fontWeight: 700 }}>
+              Sign up
             </Link>
           </Typography>
         </Paper>

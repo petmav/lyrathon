@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS recruiter (
     name TEXT NOT NULL,
     email CITEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    organisation TEXT NOT NULL,
+    organisation TEXT,
     role_title TEXT,
     notes TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

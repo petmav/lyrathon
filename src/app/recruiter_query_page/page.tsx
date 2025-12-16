@@ -4,6 +4,7 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import styles from "./recruiter_query_page.module.css";
 import { JSX } from "react/jsx-runtime";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 
 const THINKING_PHRASES = [
     "Thinking...",
@@ -116,6 +117,14 @@ function simpleMatch(query: string): Role[] {
 }
 
 export default function RecruiterQueryPage(): JSX.Element {
+    const router = useRouter();
+
+    const handleLogout = (): void => {
+        router.push('/');
+        localStorage.removeItem("recruiter_id");
+        console.log("Logged out");
+    };
+
     const [input, setInput] = useState("");
     const [isThinking, setIsThinking] = useState(false);
     const [thinkingElapsedMs, setThinkingElapsedMs] = useState(0);
@@ -312,6 +321,12 @@ export default function RecruiterQueryPage(): JSX.Element {
                         </Link>
                     </div>
                     
+                </div>
+                {/* Logout positioned to the far-right edge of the header */}
+                <div className={styles.logoutWrap}>
+                    <button onClick={handleLogout} style={{ color: 'white', background: 'none', border: 'none', cursor: 'pointer' }}>
+                        Logout
+                    </button>
                 </div>
             </header>
 
