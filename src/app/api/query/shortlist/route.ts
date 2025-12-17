@@ -15,7 +15,18 @@ import {
   isResponseValidationError,
   parseRequestPayload,
 } from '@/lib/validation';
-import { saveRecruiterQuery } from '@/lib/recruiter';
+import { newConversation, saveRecruiterQuery } from '@/lib/recruiter';
+
+const conversation_title = "New Conversation";
+
+async function getConversationId(body: any): Promise<string> {
+    if (!body.conversation_id) {
+        const conversation = await newConversation(body.recruiter_id, conversation_title);
+        console.log(conversation);
+        return conversation.conversation_id;
+    }
+    return body.conversation_id;
+}
 
 export async function POST(request: Request) {
   try {
@@ -23,11 +34,13 @@ export async function POST(request: Request) {
       recruiterQueryRequestSchema,
       await request.json(),
     );
+    const conversation_id = await getConversationId(body);
+    console.log('Using conversation ID:', conversation_id);
 
     const started = Date.now();
     // store body.query in recruiter_queries table
     saveRecruiterQuery({
-      recruiter_id: body.recruiter_id,
+      conversation_id: conversation_id,
       query_text: body.query,
       is_assistant: false,
     });
@@ -46,7 +59,12 @@ export async function POST(request: Request) {
         shortlist: [],
         overall_summary: 'No candidates matched the recruiter query.',
       });
-      return NextResponse.json(emptyResponse);
+      saveRecruiterQuery({
+        conversation_id: conversation_id,
+        query_text: JSON.stringify(emptyResponse),
+        is_assistant: true,
+      });
+      return NextResponse.json({ conversation_id: conversation_id, conversation_title, responseBody: emptyResponse });
     }
 
     const shortlist = await createShortlist(body.query, candidates, sanitizedFilters);
@@ -63,14 +81,13 @@ export async function POST(request: Request) {
     });
     
     // store responseBody in recruiter_queries table
-    console.log(responseBody);
     saveRecruiterQuery({
-      recruiter_id: body.recruiter_id,
+      conversation_id: conversation_id,
       query_text: JSON.stringify(responseBody),
       is_assistant: true,
     });
 
-    return NextResponse.json(responseBody);
+    return NextResponse.json({ conversation_id: conversation_id, conversation_title, responseBody });
   } catch (error) {
     if (isRequestValidationError(error)) {
       return NextResponse.json(

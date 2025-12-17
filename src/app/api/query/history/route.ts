@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRecruiterQueries } from "@/lib/recruiter";
+import { getRecruiterConversations } from "@/lib/recruiter";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,10 +10,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const queries = await getRecruiterQueries(recruiterId);
-    return NextResponse.json(queries);
+    const conversations = await getRecruiterConversations(recruiterId);
+    return NextResponse.json(conversations);
   } catch (error) {
-    console.error("Error fetching recruiter queries:", error);
-    return NextResponse.json({ error: "Failed to fetch recruiter queries" }, { status: 500 });
+    console.error("Error fetching recruiter conversations:", error);
+    return NextResponse.json({ error: "Failed to fetch recruiter conversations" }, { status: 500 });
   }
 }

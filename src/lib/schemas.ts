@@ -154,6 +154,7 @@ export const candidateSearchResponseSchema = z.object({
 export const recruiterQueryRequestSchema = z
   .object({
     query: nonEmptyString,
+    conversation_id: z.string().uuid().nullable(),
     recruiter_id: z.string().uuid(),
     limit: defaultedLimitSchema,
   })

@@ -106,8 +106,15 @@ CREATE INDEX IF NOT EXISTS candidate_embeddings_vec_hnsw_idx ON candidate_embedd
 
 CREATE TABLE IF NOT EXISTS recruiter_queries (
     query_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    recruiter_id UUID NOT NULL REFERENCES recruiter(recruiter_id) ON DELETE CASCADE,
     query_text TEXT NOT NULL,
     is_assistant BOOLEAN NOT NULL,
+    conversation_id UUID REFERENCES conversation(conversation_id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS conversation (
+    conversation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    recruiter_id UUID NOT NULL REFERENCES recruiter(recruiter_id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 );

@@ -76,7 +76,7 @@ export async function saveRecruiter(
 
 export async function saveRecruiterQuery(
   input: {
-    recruiter_id: string;
+    conversation_id: string;
     query_text: string;
     is_assistant: boolean;
   },
@@ -84,7 +84,7 @@ export async function saveRecruiterQuery(
     const result = await db.query(
         `
         INSERT INTO recruiter_queries (
-            recruiter_id,
+            conversation_id,
             query_text,
             is_assistant
         ) VALUES (
@@ -92,7 +92,7 @@ export async function saveRecruiterQuery(
         ) RETURNING *
         `,
         [
-            input.recruiter_id,
+            input.conversation_id,
             input.query_text,
             input.is_assistant,
         ],
@@ -101,9 +101,25 @@ export async function saveRecruiterQuery(
     return result.rows[0];
 }
 
-export async function getRecruiterQueries(recruiterId: string) {
+export async function newConversation(recruiterId: string, title: string) {
   const result = await db.query(
-    `SELECT * FROM recruiter_queries WHERE recruiter_id = $1 ORDER BY created_at ASC`,
+    `INSERT INTO conversation (recruiter_id, title) VALUES ($1, $2) RETURNING *`,
+    [recruiterId, title]
+  );
+  return result.rows[0];
+}
+
+export async function getConversationQueries(conversationId: string) {
+  const result = await db.query(
+    `SELECT * FROM recruiter_queries WHERE conversation_id = $1 ORDER BY created_at ASC`,
+    [conversationId]
+  );
+  return result.rows;
+}
+
+export async function getRecruiterConversations(recruiterId: string) {
+  const result = await db.query(
+    `SELECT * FROM conversation WHERE recruiter_id = $1 ORDER BY created_at DESC`,
     [recruiterId]
   );
   return result.rows;

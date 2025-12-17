@@ -143,10 +143,14 @@ export default function RecruiterQueryPage(): JSX.Element {
             },
         },
     ]);
+    console.log('timeline', timeline);
 
-  const listRef = useRef<HTMLDivElement | null>(null);
+    const [conversations, setConversations] = useState([]);
+    const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
-  const quickPrompts = useMemo(
+    const listRef = useRef<HTMLDivElement | null>(null);
+
+    const quickPrompts = useMemo(
         () => [
             "Frontend engineer, Sydney, React + TypeScript, 2+ years",
             "Data analyst, remote AU, SQL + Python",
@@ -156,69 +160,26 @@ export default function RecruiterQueryPage(): JSX.Element {
     );
 
     useEffect(() => {
-        const fetchHistory = async () => {
-            const recruiterId = localStorage.getItem("recruiter_id");
-            if (!recruiterId) {
-                console.error("Recruiter ID not found in local storage.");
-                return;
-            }
-
+        const fetchConversations = async () => {
             try {
-                const res = await fetch(`/api/query/history?recruiter_id=${recruiterId}`);
-                if (!res.ok) {
-                    throw new Error(`Failed to fetch history: ${res.status}`);
+                const recruiterId = localStorage.getItem("recruiter_id");
+                if (!recruiterId) {
+                    throw new Error("Recruiter ID not found in local storage.");
                 }
 
-                const data = await res.json();
-                const history = data.flatMap((item: any) => {
-                    if (item.is_assistant) {
-                        try {
-                            const parsed = JSON.parse(item.query_text);
-                            if (parsed?.shortlist && Array.isArray(parsed.shortlist)) {
-                                return [
-                                    {
-                                        kind: "shortlist",
-                                        id: item.query_id,
-                                        data: {
-                                            filters: parsed.filters || {},
-                                            shortlist: parsed.shortlist,
-                                            overall_summary: parsed.overall_summary || "",
-                                        },
-                                    },
-                                    {
-                                        kind: "message",
-                                        msg: {
-                                            id: `${item.query_id}-summary`,
-                                            role: "assistant",
-                                            text: parsed.overall_summary || "",
-                                            ts: new Date(item.created_at).getTime(),
-                                        },
-                                    },
-                                ];
-                            }
-                        } catch (error) {
-                            console.error("Failed to parse assistant query text as JSON:", error);
-                        }
-                    }
+                const res = await fetch(`/api/query/history?recruiter_id=${recruiterId}`);
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch conversations: ${res.status}`);
+                }
 
-                    return {
-                        kind: "message",
-                        msg: {
-                            id: item.query_id,
-                            role: item.is_assistant ? "assistant" : "recruiter",
-                            text: item.query_text,
-                            ts: new Date(item.created_at).getTime(),
-                        },
-                    };
-                });
-
-                setTimeline((prev) => [...history, ...prev]);
+                const conversations = await res.json();
+                setConversations(conversations);
             } catch (error) {
-                console.error("Error fetching query history:", error);
+                console.error("Error fetching conversation history:", error);
             }
         };
 
-        fetchHistory();
+        fetchConversations();
     }, []);
 
     useEffect(() => {
@@ -316,7 +277,65 @@ export default function RecruiterQueryPage(): JSX.Element {
         setTimeline((items) => [...items, { kind: "message", msg: message }]);
     }
 
-    async function handleSend(text: string) {
+    const fetchConversation = async (conversationId: string) => {
+        try {
+            const res = await fetch(`/api/query/conversation?conversation_id=${conversationId}`);
+            if (!res.ok) {
+                throw new Error(`Failed to fetch conversation: ${res.status}`);
+            }
+
+            const data = await res.json();
+            console.log(data);
+            const formattedTimeline = data.map((item: any) => {
+                if (item.is_assistant) {
+                    try {
+                        const parsed = JSON.parse(item.query_text);
+                        if (parsed?.shortlist && Array.isArray(parsed.shortlist)) {
+                            return [
+                                {
+                                    kind: "shortlist",
+                                    id: item.query_id,
+                                    data: {
+                                        filters: parsed.filters || {},
+                                        shortlist: parsed.shortlist,
+                                        overall_summary: parsed.overall_summary || "",
+                                    },
+                                },
+                                {
+                                    kind: "message",
+                                    msg: {
+                                        id: `${item.query_id}-summary`,
+                                        role: "assistant",
+                                        text: parsed.overall_summary || "",
+                                        ts: new Date(item.created_at).getTime(),
+                                    },
+                                },
+                            ];
+                        }
+                    } catch (error) {
+                        console.error("Failed to parse assistant query text as JSON:", error);
+                    }
+                }
+
+                return {
+                    kind: "message",
+                    msg: {
+                        id: item.query_id,
+                        role: item.is_assistant ? "assistant" : "recruiter",
+                        text: item.query_text,
+                        ts: new Date(item.created_at).getTime(),
+                    },
+                };
+            }).flat();
+
+            setTimeline(formattedTimeline);
+            setCurrentConversationId(conversationId);
+        } catch (error) {
+            console.error("Error fetching conversation:", error);
+        }
+    };
+
+    const handleSend = async (text: string) => {
         if (isThinking) return;
         const trimmed = text.trim();
         if (!trimmed) return;
@@ -327,23 +346,39 @@ export default function RecruiterQueryPage(): JSX.Element {
         scrollToBottom();
 
         try {
-            const recruiter_id = localStorage.getItem("recruiter_id");
-            if (!recruiter_id) {
-                throw new Error("Recruiter not logged in.");
+            const recruiterId = localStorage.getItem("recruiter_id");
+            if (!recruiterId) {
+                throw new Error("Recruiter ID not found in local storage.");
             }
 
-            const res = await fetch("/api/query/shortlist", {
+            const res = await fetch(`/api/query/shortlist`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query: trimmed, limit: 5, recruiter_id}),
+                body: JSON.stringify({
+                    query: trimmed,
+                    limit: 5,
+                    recruiter_id: recruiterId,
+                    conversation_id: currentConversationId || null,
+                }),
             });
 
             if (!res.ok) {
                 throw new Error(`Request failed: ${res.status}`);
             }
-            const replyText = await res.text();
+
+            const { conversation_id, conversation_title, responseBody } = await res.json();
+
+            // Update the current conversation ID if it was not set
+            if (!currentConversationId) {
+                setCurrentConversationId(conversation_id);
+                setConversations((prev) => [
+                    ...prev,
+                    { conversation_id: conversation_id, title: conversation_title },
+                ]);
+            }
+
             try {
-                const parsed = JSON.parse(replyText);
+                const parsed = responseBody;
                 if (parsed?.shortlist && Array.isArray(parsed.shortlist)) {
                     const typed = parsed as ShortlistResult;
                     setTimeline((items) => [
@@ -360,10 +395,10 @@ export default function RecruiterQueryPage(): JSX.Element {
                         },
                     ]);
                 } else {
-                    addMessage("assistant", replyText);
+                    addMessage("assistant", JSON.stringify(responseBody));
                 }
             } catch {
-                addMessage("assistant", replyText);
+                addMessage("assistant", JSON.stringify(responseBody));
             }
             scrollToBottom();
         } catch (error) {
@@ -375,7 +410,7 @@ export default function RecruiterQueryPage(): JSX.Element {
         } finally {
             setIsThinking(false);
         }
-    }
+    };
 
     return (
         <div className={styles.page}>
@@ -401,8 +436,28 @@ export default function RecruiterQueryPage(): JSX.Element {
                 </div>
             </header>
 
-            <main className={styles.main}>
-                <div className={styles.container}>
+            <div className={styles.container}>
+                <aside className={styles.sidebar}>
+                    <h2>Conversations</h2>
+                    <ul>
+                        {conversations.map((conversation) => (
+                            <li key={conversation.conversation_id}>
+                                <button
+                                    onClick={() => fetchConversation(conversation.conversation_id)}
+                                    className={
+                                        currentConversationId === conversation.conversation_id
+                                            ? styles.activeConversation
+                                            : ""
+                                    }
+                                >
+                                    {conversation.title}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </aside>
+
+                <main className={styles.main}>
                     <section className={styles.chatShell}>
                         <div className={styles.chatTop}>
                             <div>
@@ -530,8 +585,8 @@ export default function RecruiterQueryPage(): JSX.Element {
                         </div>
                     </section>
 
-                </div>
-            </main>
+                </main>
+            </div>
 
             <div className={styles.container}>
                 <form
