@@ -8,12 +8,11 @@ This project is a production-ready Next.js application that serves as a foundati
 
 ## Features
 
-- **Next.js 15** with App Router for modern React development
-- **TypeScript** for type safety and better developer experience
-- **ESLint** for code quality and consistency
-- **Optimized** for RAG pipeline integration
-- **Server Components** for improved performance
-- **API Routes** ready for backend integration
+- **Next.js 15** (App Router)
+- **Glassmorphism UI** (Global CSS + Animations)
+- **RAG Pipeline** (OpenAI Embeddings + pgvector)
+- **Automated Verification** (LLM-based cross-validation)
+- **Hybrid Search** (Semantic + SQL filtering)
 
 ## Prerequisites
 
@@ -81,119 +80,17 @@ scripts\db-reset.bat
 ```
 
 ## API
+The API is built on Next.js Route Handlers and includes comprehensive endpoints for candidate management, semantic search, and AI verification.
+- [**Full API Documentation**](docs/API.md) - endpoints, schemas, and curl examples.
 
-Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL` / `OPENAI_EMBEDDING_MODEL` / `OPENAI_SHORTLIST_MODEL` / `OPENAI_VERIFICATION_MODEL`) in `.env` to enable LLM-powered query parsing, semantic retrieval, shortlist generation, and verification scoring. Add `LOG_WEBHOOK_URL` if you want logs posted to an external endpoint; otherwise they are printed to stdout. The default embedding model is `text-embedding-3-small` (1536 dimensions) to stay within pgvector’s 2000-dimension index limit. Document ingestion for verification will fetch and parse PDF/text files up to `VERIFICATION_MAX_DOC_BYTES` (default ~2MB) and include the extracted text in the GPT prompt. Key endpoints:
+**Key Features**:
+- **Semantic Search**: `/api/query` parses natural language into SQL filters + vector search.
+- **Shortlisting**: `/api/query/shortlist` generates AI-reasoned shortlists.
+- **Verification**: `/api/verification/process` runs background checks on candidate claims vs documents.
 
-### `/api/candidates`
-
-Filtered candidate search over PostgreSQL. Request bodies are validated with Zod (`candidateFiltersSchema`), so `searchTerm` must be a non-empty string while every other field is optional and treated as a preference. Invalid shapes return `400` with `details` describing the field errors. Example:
-
-```bash
-curl -X POST http://localhost:3000/api/candidates \
-  -H "Content-Type: application/json" \
-  -d '{
-    "searchTerm": "frontend",
-    "location": "canada",
-    "visaRequired": true,
-    "minExperience": 5,
-    "maxSalary": 180000,
-    "availabilityBefore": "2025-03-01",
-    "limit": 20
-  }'
-```
-
-The route applies the keyword match as the only hard filter, boosts candidates who align with the optional hints (location aliases, visa readiness, experience, compensation, availability), validates the response shape, and returns `{ "data": Candidate[] }`.
-
-### `/api/query`
-
-Turns natural-language recruiter prompts into structured filters via OpenAI before executing the search. Request bodies must match `{"query": string, "limit"?: number<=100}`. The endpoint sanitizes LLM output back through the same filter schema to ensure only valid data is used. If `limit` is provided, it also guides shortlist sizing downstream (default 5, capped at 10):
-
-```bash
-curl -X POST http://localhost:3000/api/query \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "Need senior React engineer in Canada, must be eligible for TN visa, salary under 170k",
-    "limit": 10
-  }'
-```
-
-Response includes the inferred filters plus the shortlisted candidates. If `OPENAI_API_KEY` is not configured, the endpoint falls back to keyword-only matching.
-
-### `/api/query/shortlist`
-
-Complete recruiter flow: parse intent → apply filters → retrieve semantic matches → generate an LLM-powered shortlist with recommendations. Request schema mirrors `/api/query` and responses adhere to `shortlistResponseSchema`. `limit` (default 5, capped at 10) controls how many candidates the LLM is asked to return. When the LLM fails or returns invalid JSON, the API falls back to a deterministic shortlist derived from SQL results so the schema is still satisfied.
-
-```bash
-curl -X POST http://localhost:3000/api/query/shortlist \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "Looking for a staff-level backend engineer in Toronto with GraphQL experience, TN visa ready.",
-    "limit": 5
-  }'
-```
-
-The response contains the structured shortlist (candidate IDs, age, email, location, match summary, recommended action, confidence) plus the filters applied. When `OPENAI_API_KEY` is not set, the endpoint simply returns the fallback shortlist with neutral scores. Empty candidate pools return a valid response with `shortlist: []` and an explanatory summary.
-
-## Monitoring & Tests
-
-- **Logging**: Set `LOG_WEBHOOK_URL` to have every API call post structured logs (duration, results, errors) to your monitoring endpoint. When unset, events print to stdout/stderr.
-- **Unit tests**: Run `npm test` (Jest + ts-jest) to verify query parsing fallbacks, search tokenisation, and shortlist fallback behaviour. Add additional cases in the `tests/` directory as you expand the RAG pipeline.
-
-### `/api/candidates/register`
-
-Intake endpoint for candidate submissions. The payload must satisfy `candidateInputSchema` (name/email/password hash/age required; optional fields are sanitized). Violations return `400` with field-level errors. Successful submissions persist the record, refresh embeddings, and respond with the validated candidate shape (excluding the password hash):
-
-```bash
-curl -X POST http://localhost:3000/api/candidates/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Kai Patel",
-    "age": 33,
-    "email": "kai@example.com",
-    "password_hash": "$2a$10$exampleCandidateKai",
-    "current_position": "Senior Backend Engineer",
-    "location": "Toronto, CA",
-    "skills_text": "Go, AWS, PostgreSQL, GraphQL, distributed systems",
-    "projects_text": "Lead payments platform rewrite for 5M users."
-  }'
-```
-
-Response:
-
-```json
-{
-  "data": {
-    "candidate_id": "uuid",
-    "name": "Kai Patel",
-    "age": 33,
-    "email": "kai@example.com",
-    "current_position": "Senior Backend Engineer",
-    "...": "..."
-  },
-  "embeddingUpdated": true
-}
-```
-
-Every response is validated against the published schema (`candidateRegistrationResponseSchema`) before being sent, guarding downstream consumers from shape drift.
-
-### Verification queue
-
-- New candidates automatically enqueue a verification run that checks resume/education/projects alignment. Runs are processed in the background (simulated cloud task) and stored in `verification_runs` with an aggregated `verifiable_confidence_score` on `candidate`. The verifier de-duplicates project links across candidates, can optionally use `web_search`, records overlap counts plus JSON-formatted checks in `metadata`, and now pulls text from uploaded resume/transcript URLs (PDF/text) to give GPT real content to judge against claims.
-- Trigger processing manually (or via a scheduler) with:
-
-```bash
-curl -X POST http://localhost:3000/api/verification/process \
-  -H "Content-Type: application/json" \
-  -d '{ "limit": 3 }'
-```
-
-If the LLM or web_search isn’t available, the run is marked as failed and the candidate remains usable. Successful runs update the per-candidate confidence average; all API calls emit structured logs via `logEvent`.
-
-## Retrieval Flow
-
-1. **Candidate intake** (`/api/candidates/register`): form submissions hit this endpoint, which stores the row in PostgreSQL and generates embeddings through OpenAI into the `candidate_embeddings` table (powered by `pgvector`).
-2. **Recruiter query** (`/api/query`): natural-language prompts are parsed by an LLM into structured filters, run against SQL for deterministic requirements (visa, availability, etc.), and re-ranked semantically via vector similarity before returning a shortlist.
-3. **Future steps**: layer on hybrid BM25+vector search, re-ranking, and shortlist generation as described in `RAG.md`.
+## Monitoring
+- **Logging**: Set `LOG_WEBHOOK_URL` to post structured logs (duration, results, errors) to an external endpoint. Events print to stdout/stderr otherwise.
+- **Testing**: Run `npm test` to verify query parsing, search logic, and UI components. See [Testing Guide](docs/Test.md).
 
 ## Installation
 
@@ -324,23 +221,7 @@ lyrathon/
    npm start
    ```
 
-## RAG Pipeline Integration
 
-This application is designed to integrate with RAG (Retrieval-Augmented Generation) pipelines. Future implementations will include:
-
-- **Vector Database Integration**: For efficient document storage and retrieval
-- **Embedding Generation**: Converting documents to vector embeddings
-- **Semantic Search**: Finding relevant context for user queries
-- **LLM Integration**: Generating responses based on retrieved context
-- **API Endpoints**: Server-side routes for RAG operations
-
-### Recommended Architecture
-
-```
-Client → Next.js API Routes → RAG Pipeline → Vector DB
-                            ↓
-                        LLM Service
-```
 
 ## Environment Variables
 
@@ -420,12 +301,14 @@ npm install
 npm run build
 ```
 
-## Learn More
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
-- [React Documentation](https://react.dev/)
-- [RAG Concepts](https://www.pinecone.io/learn/retrieval-augmented-generation/)
+## Documentation
+Complete documentation is available in the `docs/` folder:
+- [**RAG Pipeline**](docs/RAG.md): Embedding, hybrid search, and query parsing logic.
+- [**API Reference**](docs/API.md): Endpoints for candidates, queries, and verification.
+- [**Validation Logic**](docs/Validation.md): Automated verification using `gpt-5-mini`.
+- [**Database**](docs/Database.md): Schema and pgvector setup.
+- [**Testing**](docs/Test.md): Backend and component test guide.
+- [**Frontend**](docs/Frontend.md): Glassmorphism design system and architecture.
 
 ## License
 

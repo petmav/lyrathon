@@ -60,7 +60,12 @@ describe('ApplicantFormPage', () => {
     it('renders the dashboard view by default', async () => {
         render(<ApplicantFormPage />);
 
-        expect(screen.getByText(/Your Profile/i)).toBeInTheDocument();
+        // Wait for initial data fetch to resolve and set state
+        await waitFor(() => {
+            expect(screen.getByText(/John Doe/i)).toBeInTheDocument();
+        });
+
+        // expect(screen.getByText(/Your Profile/i)).toBeInTheDocument(); // Name is rendered instead
         expect(screen.getByText(/Ready to be seen/i)).toBeInTheDocument();
         expect(screen.getByText(/Skills & Awards/i)).toBeInTheDocument();
     });
@@ -68,8 +73,11 @@ describe('ApplicantFormPage', () => {
     it('slides to editor panel when Edit is clicked', async () => {
         render(<ApplicantFormPage />);
 
+        // Wait for initial fetch
+        await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
         // Initial state: Dashboard visible (logic checked by existence of Edit button)
-        const editButtons = screen.getAllByText('Edit');
+        const editButtons = await screen.findAllByText('Edit');
         fireEvent.click(editButtons[0]); // Click first edit button (Core Profile)
 
         // Check if editor title appears
@@ -84,8 +92,11 @@ describe('ApplicantFormPage', () => {
     it('populates form with fetched data', async () => {
         render(<ApplicantFormPage />);
 
+        // Wait for data
+        await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
         // Open Core Profile editor
-        const editButtons = screen.getAllByText('Edit');
+        const editButtons = await screen.findAllByText('Edit');
         fireEvent.click(editButtons[0]);
 
         await waitFor(() => {
@@ -97,8 +108,11 @@ describe('ApplicantFormPage', () => {
     it('calls API when Save Changes is clicked', async () => {
         render(<ApplicantFormPage />);
 
+        // Wait for data
+        await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
         // Open editor
-        const editButtons = screen.getAllByText('Edit');
+        const editButtons = await screen.findAllByText('Edit');
         fireEvent.click(editButtons[0]);
 
         // Change name

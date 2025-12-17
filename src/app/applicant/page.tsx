@@ -1,7 +1,6 @@
 "use client";
 
 import { JSX, SyntheticEvent, useState, useEffect, useRef, useCallback } from "react";
-import { Box } from "@mui/material";
 import { apiCall } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

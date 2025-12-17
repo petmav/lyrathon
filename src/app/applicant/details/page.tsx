@@ -1,22 +1,6 @@
 "use client"
 
 import { useState, type ReactNode } from "react";
-import {
-  Box,
-  Paper,
-  Typography,
-  AppBar,
-  Toolbar,
-  Button,
-  Chip,
-  Stack,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-} from "@mui/material";
 import { useRouter } from "next/navigation";
 
 type ApplicationForm = {
@@ -49,22 +33,22 @@ const initialApplication: ApplicationForm = {
 
 export default function ApplicationDetailsPage() {
   const [application, setApplication] = useState<ApplicationForm>(initialApplication);
-
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState<ApplicationForm>(initialApplication);
+
   const router = useRouter();
+
   const handleLogout = () => {
     router.push('/');
-    console.log("Logged out");
   };
 
   const handleSave = () => {
     const normalizedSkills = Array.isArray(editData.skills)
       ? editData.skills
       : String(editData.skills)
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
 
     setApplication({
       ...editData,
@@ -74,147 +58,218 @@ export default function ApplicationDetailsPage() {
   };
 
   const Section = ({ title, children }: { title: string; children: ReactNode }) => (
-    <Box sx={{ mb: 3 }}>
-      <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+    <div style={{ marginBottom: 24 }}>
+      <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 8, color: '#e8edf5' }}>
         {title}
-      </Typography>
-      {children}
-    </Box>
+      </h3>
+      <div style={{ color: '#b7c2d9' }}>{children}</div>
+    </div>
   );
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "grey.100" }}>
-      <AppBar position="static" elevation={1} color="default">
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-          <Typography variant="h6" fontWeight={600}>
-            My Application
-          </Typography>
-          <Button color="primary" onClick={handleLogout}>
+    <div className="no-scroll-app">
+      <div className="viewport-container" style={{
+        background: 'radial-gradient(circle at 50% 10%, rgba(20, 25, 50, 0.6) 0%, rgba(5, 8, 20, 1) 100%)',
+        overflowY: 'auto'
+      }}>
+
+        {/* Header */}
+        <div style={{
+          padding: '16px 32px',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          background: 'rgba(5, 8, 20, 0.8)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10
+        }}>
+          <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>My Application</div>
+          <button onClick={handleLogout} className="btn secondary" style={{ padding: '6px 16px' }}>
             Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
+          </button>
+        </div>
 
-      <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-        <Paper sx={{ width: "100%", maxWidth: 900, p: 4, borderRadius: 3 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-            <Typography variant="h5" fontWeight={600}>
-              Application details
-            </Typography>
-            <Box sx={{ display: "flex", gap: 1 }}>
-              <Chip label={application.status} variant="outlined" />
-              <Button variant="outlined" onClick={() => setEditOpen(true)}>
-                Edit
-              </Button>
-            </Box>
-          </Box>
+        <div style={{
+          maxWidth: 900,
+          margin: '32px auto',
+          padding: '0 24px'
+        }}>
+          <div className="glass-card" style={{ padding: 40 }}>
+            {/* Title Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+              <h1 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Application details</h1>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{
+                  padding: '4px 12px',
+                  borderRadius: 99,
+                  background: 'rgba(154, 107, 255, 0.15)',
+                  color: '#9a6bff',
+                  border: '1px solid rgba(154, 107, 255, 0.3)',
+                  fontSize: '0.85rem',
+                  fontWeight: 600
+                }}>
+                  {application.status}
+                </div>
+                <button
+                  onClick={() => { setEditData({ ...application }); setEditOpen(true); }}
+                  className="btn secondary"
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
 
-          <Divider sx={{ mb: 3 }} />
+            <hr style={{ border: '0', borderTop: '1px solid rgba(255,255,255,0.1)', marginBottom: 32 }} />
 
-          <Section title="Personal information">
-            <Typography>Name: {application.name}</Typography>
-            <Typography>Email: {application.email}</Typography>
-            <Typography>Location: {application.location}</Typography>
-            <Typography>Visa status: {application.visaStatus}</Typography>
-          </Section>
+            <Section title="Personal information">
+              <div style={{ display: 'grid', gap: 8 }}>
+                <div>Name: <span style={{ color: '#fff' }}>{application.name}</span></div>
+                <div>Email: <span style={{ color: '#fff' }}>{application.email}</span></div>
+                <div>Location: <span style={{ color: '#fff' }}>{application.location}</span></div>
+                <div>Visa status: <span style={{ color: '#fff' }}>{application.visaStatus}</span></div>
+              </div>
+            </Section>
 
-          <Section title="Skills">
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              {application.skills.map((skill, idx) => (
-                <Chip key={idx} label={skill} />
-              ))}
-            </Stack>
-          </Section>
+            <Section title="Skills">
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {application.skills.map((skill, idx) => (
+                  <span key={idx} style={{
+                    padding: '4px 12px',
+                    borderRadius: 6,
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    fontSize: '0.9rem'
+                  }}>
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </Section>
 
-          <Section title="Professional experience">
-            <Typography whiteSpace="pre-line">
-              {application.experience}
-            </Typography>
-          </Section>
+            <Section title="Professional experience">
+              <div style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+                {application.experience}
+              </div>
+            </Section>
 
-          <Section title="Job history">
-            <Typography whiteSpace="pre-line">
-              {application.jobHistory}
-            </Typography>
-          </Section>
+            <Section title="Job history">
+              <div style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+                {application.jobHistory}
+              </div>
+            </Section>
 
-          <Section title="Certifications">
-            <Typography>{application.certifications}</Typography>
-          </Section>
+            <Section title="Certifications">
+              <div>{application.certifications}</div>
+            </Section>
 
-          <Section title="Resume">
-            <Typography color="primary">{application.resumeName}</Typography>
-          </Section>
-        </Paper>
-      </Box>
+            <Section title="Resume">
+              <div style={{ color: '#4fd1c5', fontWeight: 500 }}>{application.resumeName}</div>
+            </Section>
+          </div>
+        </div>
 
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle>Edit application</DialogTitle>
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-          <TextField
-            label="Full name"
-            value={editData.name}
-            onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-          />
-          <TextField
-            label="Email"
-            value={editData.email}
-            onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-          />
-          <TextField
-            label="Location"
-            value={editData.location}
-            onChange={(e) => setEditData({ ...editData, location: e.target.value })}
-          />
-          <TextField
-            label="Visa status"
-            value={editData.visaStatus}
-            onChange={(e) => setEditData({ ...editData, visaStatus: e.target.value })}
-          />
-          <TextField
-            label="Skills (comma separated)"
-            value={
-              Array.isArray(editData.skills)
-                ? editData.skills.join(", ")
-                : editData.skills
-            }
-            onChange={(e) =>
-              setEditData({
-                ...editData,
-                skills: e.target.value
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean),
-              })
-            }
-          />
-          <TextField
-            label="Experience"
-            multiline
-            minRows={3}
-            value={editData.experience}
-            onChange={(e) => setEditData({ ...editData, experience: e.target.value })}
-          />
-          <TextField
-            label="Job history"
-            multiline
-            minRows={3}
-            value={editData.jobHistory}
-            onChange={(e) => setEditData({ ...editData, jobHistory: e.target.value })}
-          />
-          <TextField
-            label="Certifications"
-            value={editData.certifications}
-            onChange={(e) => setEditData({ ...editData, certifications: e.target.value })}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave}>
-            Save changes
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+        {/* Edit Modal / Slide-over Overlay */}
+        {editOpen && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 100,
+            display: 'grid',
+            placeItems: 'center',
+            padding: 24
+          }}>
+            <div className="glass-card" style={{
+              width: '100%',
+              maxWidth: 600,
+              padding: 32,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              background: '#0a0e1a' // Darker background for contrast
+            }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: 24 }}>Edit application</h2>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <label className="input-label">Full Name</label>
+                  <input
+                    className="textarea"
+                    value={editData.name}
+                    onChange={e => setEditData({ ...editData, name: e.target.value })}
+                    style={{ width: '100%', minHeight: 40 }}
+                  />
+                </div>
+                <div>
+                  <label className="input-label">Email</label>
+                  <input
+                    className="textarea"
+                    value={editData.email}
+                    onChange={e => setEditData({ ...editData, email: e.target.value })}
+                    style={{ width: '100%', minHeight: 40 }}
+                  />
+                </div>
+                <div>
+                  <label className="input-label">Location</label>
+                  <input
+                    className="textarea"
+                    value={editData.location}
+                    onChange={e => setEditData({ ...editData, location: e.target.value })}
+                    style={{ width: '100%', minHeight: 40 }}
+                  />
+                </div>
+                <div>
+                  <label className="input-label">Visa Status</label>
+                  <input
+                    className="textarea"
+                    value={editData.visaStatus}
+                    onChange={e => setEditData({ ...editData, visaStatus: e.target.value })}
+                    style={{ width: '100%', minHeight: 40 }}
+                  />
+                </div>
+                <div>
+                  <label className="input-label">Skills (comma separated)</label>
+                  <input
+                    className="textarea"
+                    value={Array.isArray(editData.skills) ? editData.skills.join(", ") : editData.skills}
+                    onChange={(e) => setEditData({ ...editData, skills: e.target.value.split(",") })}
+                    style={{ width: '100%', minHeight: 40 }}
+                  />
+                </div>
+                <div>
+                  <label className="input-label">Experience</label>
+                  <textarea
+                    className="textarea"
+                    rows={4}
+                    value={editData.experience}
+                    onChange={e => setEditData({ ...editData, experience: e.target.value })}
+                    style={{ width: '100%', resize: 'vertical' }}
+                  />
+                </div>
+                <div>
+                  <label className="input-label">Job History</label>
+                  <textarea
+                    className="textarea"
+                    rows={4}
+                    value={editData.jobHistory}
+                    onChange={e => setEditData({ ...editData, jobHistory: e.target.value })}
+                    style={{ width: '100%', resize: 'vertical' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 32 }}>
+                <button onClick={() => setEditOpen(false)} className="btn text">Cancel</button>
+                <button onClick={handleSave} className="btn primary">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
   );
 }

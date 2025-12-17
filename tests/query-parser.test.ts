@@ -40,10 +40,13 @@ describe('extractFiltersFromQuery', () => {
   beforeEach(() => {
     delete process.env.OPENAI_API_KEY;
     jest.resetModules();
+    jest.spyOn(console, 'warn').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => { });
   });
 
   afterEach(() => {
     process.env.OPENAI_API_KEY = originalKey;
+    jest.restoreAllMocks();
   });
 
   it('falls back to keyword-only filters when OPENAI_API_KEY is missing', async () => {

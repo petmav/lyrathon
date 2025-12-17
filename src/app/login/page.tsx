@@ -1,16 +1,9 @@
 "use client"
 
 import { useState, FormEvent } from "react";
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Paper,
-  CircularProgress,
-} from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { apiCall } from "@/lib/utils";
 
 const highlights = [
   {
@@ -40,291 +33,135 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      
+      const data: any = await apiCall("/api/login", "POST", { email, password });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data?.error ?? "Login failed");
-        setLoading(false);
-        return;
+      if (data.error) {
+        throw new Error(data.error);
       }
-      localStorage.setItem("candidate_id", data.candidate_id);
-      console.log(data);
 
-      // on success redirect to home (or wherever you want)
+      localStorage.setItem("candidate_id", data.candidate_id);
       router.push("/applicant");
-    } catch (err) {
-      setError("Network error");
+    } catch (err: any) {
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
-  const accentGradient = "linear-gradient(135deg, #9a6bff 0%, #4fd1c5 100%)";
-
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "grid",
-        placeItems: "center",
-        position: "relative",
-        padding: { xs: 3, md: 6 },
-        background:
-          "linear-gradient(180deg, rgba(5, 8, 20, 0.9), rgba(5, 8, 20, 0.96)), url(/bg.jpg) center/cover no-repeat",
-        color: "#e8edf5",
-      }}
-    >
-      <Box
-        sx={{
-          width: "min(1100px, 100%)",
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "1.1fr 0.9fr" },
-          gap: { xs: 3, md: 4 },
-        }}
-      >
-        <Box
-          sx={{
-            borderRadius: 3,
-            border: "1px solid rgba(255,255,255,0.1)",
-            background:
-              "linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
-            p: { xs: 3, md: 4 },
-            boxShadow: "0 25px 60px rgba(0,0,0,0.45)",
-            backdropFilter: "blur(16px)",
-            display: "grid",
-            gap: 3,
-            opacity: 0,
-            animation: "authFade 0.7s ease forwards 0.05s",
-            "@keyframes authFade": {
-              from: { opacity: 0, transform: "translateY(12px)" },
-              to: { opacity: 1, transform: "translateY(0)" },
-            },
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Link
-              href="/"
-              style={{ textDecoration: "none" }}
-              aria-label="Back to landing"
-            >
-              <Box
-                sx={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 2,
-                  background: accentGradient,
-                  display: "grid",
-                  placeItems: "center",
-                  fontWeight: 900,
-                  color: "#050712",
-                  boxShadow: "0 15px 30px rgba(0,0,0,0.35)",
-                }}
-              >
-                L
-              </Box>
-            </Link>
-            <Box>
-              <Typography fontWeight={800} letterSpacing={-0.3}>
-                Linkdr
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#b7c2d9" }}>
-                Secure sign-in
-              </Typography>
-            </Box>
-          </Box>
+    <div className="no-scroll-app">
+      <div className="viewport-container" style={{
+        display: 'grid',
+        placeItems: 'center',
+        background: 'radial-gradient(circle at 50% 10%, rgba(25, 30, 60, 0.4) 0%, rgba(5, 8, 20, 1) 100%)'
+      }}>
 
-          <Box sx={{ display: "grid", gap: 1 }}>
-            <Typography
-              variant="h4"
-              fontWeight={800}
-              sx={{ letterSpacing: -0.4, lineHeight: 1.1 }}
-            >
-              Jump back into your pipeline.
-            </Typography>
-            <Typography variant="body1" sx={{ color: "#b7c2d9", maxWidth: 520 }}>
-              Continue tracking recruiter queries, shortlist decisions, and keep your profile
-              synced across the stack.
-            </Typography>
-          </Box>
+        <div style={{
+          width: 'min(1100px, 100%)',
+          display: 'grid',
+          gridTemplateColumns: '1.1fr 0.9fr',
+          gap: 40,
+          padding: 24
+        }}>
 
-          <Box
-            sx={{
-              display: "grid",
-              gap: 1.5,
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" },
-            }}
-          >
-            {highlights.map((item) => (
-              <Box
-                key={item.title}
-                sx={{
-                  borderRadius: 2,
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  background: "rgba(255,255,255,0.04)",
-                  p: 2,
-                  minHeight: 120,
-                  display: "grid",
-                  alignContent: "space-between",
-                  gap: 1,
-                }}
-              >
-                <Typography fontWeight={700} sx={{ fontSize: "1rem" }}>
-                  {item.title}
-                </Typography>
-                <Typography variant="body2" sx={{ color: "#b7c2d9" }}>
-                  {item.body}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </Box>
+          {/* Left Column: Info */}
+          <div className="glass-card" style={{ padding: 40, display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Link href="/" style={{ textDecoration: 'none' }}>
+                <div style={{
+                  width: 42, height: 42, borderRadius: 8,
+                  background: 'linear-gradient(135deg, #9a6bff 0%, #4fd1c5 100%)',
+                  display: 'grid', placeItems: 'center',
+                  fontWeight: 900, color: '#050712'
+                }}>L</div>
+              </Link>
+              <div>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Linkdr</h2>
+                <p className="muted">Secure sign-in</p>
+              </div>
+            </div>
 
-        <Paper
-          elevation={0}
-          sx={{
-            width: "100%",
-            p: { xs: 3, md: 4 },
-            borderRadius: 3,
-            border: "1px solid rgba(255,255,255,0.12)",
-            background: "rgba(255,255,255,0.05)",
-            boxShadow: "0 25px 60px rgba(0,0,0,0.45)",
-            backdropFilter: "blur(18px)",
-            color: "#e8edf5",
-            opacity: 0,
-            animation: "authFade 0.75s ease forwards 0.15s",
-            "@keyframes authFade": {
-              from: { opacity: 0, transform: "translateY(12px)" },
-              to: { opacity: 1, transform: "translateY(0)" },
-            },
-          }}
-        >
-          <Box sx={{ display: "grid", gap: 0.5, mb: 3 }}>
-            <Typography variant="overline" sx={{ letterSpacing: 1.2, color: "#9a6bff" }}>
-              Welcome back
-            </Typography>
-            <Typography variant="h5" fontWeight={700}>
-              Sign in to Linkdr
-            </Typography>
-            <Typography variant="body2" sx={{ color: "#b7c2d9" }}>
-              Keep momentum on applications and recruiter conversations.
-            </Typography>
-          </Box>
+            <div>
+              <h1 className="hero-title" style={{ fontSize: '2.5rem', lineHeight: 1.1 }}>
+                Jump back into your pipeline.
+              </h1>
+              <p className="hero-subtitle" style={{ marginTop: 16 }}>
+                Continue tracking recruiter queries, shortlist decisions, and keep your profile synced across the stack.
+              </p>
+            </div>
 
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            sx={{ gap: 2, display: "flex", flexDirection: "column" }}
-          >
-            <TextField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              fullWidth
-              InputLabelProps={{ sx: { color: "#b7c2d9" } }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  background: "rgba(255,255,255,0.04)",
-                  borderRadius: 2,
-                  color: "#e8edf5",
-                  "& fieldset": { borderColor: "rgba(255,255,255,0.12)" },
-                  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.35)" },
-                  "&.Mui-focused fieldset": { borderColor: "#9a6bff" },
-                },
-              }}
-            />
+            <div style={{ display: 'grid', gap: 12, marginTop: 'auto' }}>
+              {highlights.map((item) => (
+                <div key={item.title} style={{
+                  padding: 16, borderRadius: 8,
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)'
+                }}>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>{item.title}</div>
+                  <div className="muted" style={{ fontSize: '0.9rem' }}>{item.body}</div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-            <TextField
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              fullWidth
-              InputLabelProps={{ sx: { color: "#b7c2d9" } }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  background: "rgba(255,255,255,0.04)",
-                  borderRadius: 2,
-                  color: "#e8edf5",
-                  "& fieldset": { borderColor: "rgba(255,255,255,0.12)" },
-                  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.35)" },
-                  "&.Mui-focused fieldset": { borderColor: "#9a6bff" },
-                },
-              }}
-            />
+          {/* Right Column: Form */}
+          <div className="glass-card" style={{ padding: 40 }}>
+            <div style={{ marginBottom: 32 }}>
+              <p className="eyebrow" style={{ color: '#9a6bff' }}>Welcome back</p>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Sign in to Linkdr</h2>
+            </div>
 
-            <Button
-              type="submit"
-              variant="contained"
-              size="large"
-              disabled={loading}
-              sx={{
-                mt: 1,
-                borderRadius: 999,
-                py: 1.3,
-                fontWeight: 800,
-                background: accentGradient,
-                boxShadow: "0 18px 40px rgba(0,0,0,0.35)",
-                textTransform: "none",
-                "&:hover": {
-                  background: accentGradient,
-                  filter: "brightness(1.05)",
-                },
-              }}
-            >
-              {loading ? <CircularProgress size={22} sx={{ color: "#050712" }} /> : "Sign in"}
-            </Button>
-          </Box>
+            {error && (
+              <div style={{
+                padding: 12, borderRadius: 8,
+                background: 'rgba(255, 50, 50, 0.1)', border: '1px solid rgba(255, 50, 50, 0.2)',
+                color: '#ff6b6b', fontSize: '0.9rem', marginBottom: 24
+              }}>
+                {error}
+              </div>
+            )}
 
-          {error && (
-            <Typography variant="body2" color="error" align="center" sx={{ mt: 2 }}>
-              {error}
-            </Typography>
-          )}
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: 8, color: 'var(--muted)' }}>Email</label>
+                <input
+                  type="email"
+                  className="textarea"
+                  style={{ width: '100%', minHeight: 48, resize: 'none' }}
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                />
+              </div>
 
-          <Typography
-            variant="body2"
-            sx={{ color: "#b7c2d9", mt: 3, textAlign: "center" }}
-          >
-            Don’t have an account?{" "}
-            <Link href={"/register"} style={{ color: "#9a6bff", fontWeight: 700 }}>
-              Sign up
-            </Link>
-          </Typography>
-        </Paper>
-      </Box>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: 8, color: 'var(--muted)' }}>Password</label>
+                <input
+                  type="password"
+                  className="textarea"
+                  style={{ width: '100%', minHeight: 48, resize: 'none' }}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                />
+              </div>
 
-      <Box
-        sx={{
-          position: "absolute",
-          right: 24,
-          bottom: 16,
-          display: "flex",
-          gap: 4,
-          alignItems: "center",
-          color: "#b7c2d9",
-          fontSize: "0.85rem",
-          opacity: 0.9,
-        }}
-      >
-        <Link href="/privacy" style={{ color: "inherit", textDecoration: "none" }}>
-          Privacy &amp; Terms
-        </Link>
-        <Link href="/contact" style={{ color: "inherit", textDecoration: "none" }}>
-          Contact
-        </Link>
-        <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>
-          Landing
-        </Link>
-      </Box>
-    </Box>
+              <button type="submit" className="btn primary" disabled={loading} style={{ justifyContent: 'center', height: 48 }}>
+                {loading ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+
+            <p style={{ textAlign: 'center', marginTop: 24, fontSize: '0.9rem', color: 'var(--muted)' }}>
+              Don’t have an account? <Link href="/register" style={{ color: '#9a6bff', fontWeight: 700 }}>Sign up</Link>
+            </p>
+          </div>
+
+        </div>
+
+        <div style={{ position: 'absolute', bottom: 24, right: 24, display: 'flex', gap: 24, fontSize: '0.85rem' }}>
+          <Link href="/" className="muted">Landing</Link>
+          <Link href="/privacy" className="muted">Privacy</Link>
+        </div>
+      </div>
+    </div>
   );
 }
