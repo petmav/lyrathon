@@ -507,21 +507,21 @@ export default function ApplicantFormPage(): JSX.Element {
   return (
     <div className="viewport-container">
       {/* Fixed Header */}
-      <header className="site-header" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 50 }}>
+      <header className="site-header">
         <div className="container header-row">
-          <div className="brand">
-            <Link href="/" aria-label="Linkdr homepage">
+          <div className="brand" style={{ gap: 0, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+            <Link href="/" aria-label="Linkdr homepage" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
               <span className="brand-mark">L</span>
               <span className="brand-text">Linkdr</span>
             </Link>
+            <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 24px' }} />
+            <p className="eyebrow" style={{ margin: 0, fontSize: '0.85rem', letterSpacing: '0.05em', color: 'var(--muted)' }}>APPLICANT CONSOLE</p>
           </div>
-          <nav className="nav" aria-label="Primary">
-            <Link className="nav-link" href="/">Home</Link>
-            <Link className="nav-link" href="/register">Applicants</Link>
-            <Link className="nav-link" href="/recruiter_query_page">Recruiters</Link>
-          </nav>
-          <div className="nav-actions">
-            <button className="btn ghost" onClick={handleLogout}>Logout</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <nav className="nav" aria-label="Primary">
+              <Link className="nav-link" href="/">Home</Link>
+              <button className="nav-link btn text" onClick={handleLogout}>Logout</button>
+            </nav>
           </div>
         </div>
       </header>
@@ -534,51 +534,83 @@ export default function ApplicantFormPage(): JSX.Element {
 
             {/* LEFT COLUMN: SNAPSHOT */}
             <div className="scroll-col">
-              <section className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <section className="glass-card reveal show reveal-delay-0" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: 32, position: 'relative', overflow: 'hidden' }}>
+                {/* Holographic overlap effect */}
+                <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, background: 'radial-gradient(circle, rgba(154,107,255,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+
                 <div>
-                  <h1 className="hero-title" style={{ fontSize: '1.8rem' }}>
-                    {name || 'Your Profile'}
+                  <div className="eyebrow" style={{ marginBottom: 8 }}>Applicant Profile</div>
+                  <h1 className="hero-title" style={{ fontSize: '2.4rem', marginBottom: 8 }}>
+                    Welcome back,<br />
+                    <span style={{ color: 'var(--accent)' }}>{name?.split(' ')[0] || 'Candidate'}</span>.
                   </h1>
-                  <p className="hero-subtitle" style={{ fontSize: '1rem' }}>
-                    Ready to be seen.
+                  <p className="hero-subtitle" style={{ fontSize: '1.05rem', maxWidth: '100%' }}>
+                    Your profile is live. Recruiters can find you based on verified skills and experience.
                   </p>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                    <div className="tooltip-trigger">
-                      <div className={`status-badge ${confidenceBadge.status}`}>
-                        <span>{confidenceBadge.label}: {confidenceBadge.value}</span>
-                      </div>
-                      {tooltipOpen === 'badge' && (
-                        <div className="tooltip-content">
-                          {confidenceBadge.tooltip}
+                </div>
+
+                {/* Progress Ring / Badge */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                  <div style={{ position: 'relative', width: 80, height: 80, display: 'grid', placeItems: 'center' }}>
+                    <svg width="80" height="80" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                      <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+                      <circle cx="50" cy="50" r="45" fill="none" stroke="url(#gradient)" strokeWidth="8" strokeDasharray="283" strokeDashoffset={283 - ((aggregateConfidence || 0) * 283)} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1s ease-out' }} />
+                      <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="var(--accent)" />
+                          <stop offset="100%" stopColor="var(--accent-2)" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontWeight: 900, fontSize: '1.2rem' }}>
+                      {aggregateConfidence ? `${(aggregateConfidence * 100).toFixed(0)}%` : '0%'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: 4 }}>Profile Strength</div>
+                    {(() => {
+                      const style =
+                        confidenceBadge.status === 'verified' ? { bg: 'rgba(34, 197, 94, 0.1)', border: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' } :
+                          confidenceBadge.status === 'partial' ? { bg: 'rgba(234, 179, 8, 0.1)', border: 'rgba(234, 179, 8, 0.3)', color: '#facc15' } :
+                            { bg: 'rgba(239, 68, 68, 0.1)', border: 'rgba(239, 68, 68, 0.3)', color: '#f87171' };
+
+                      return (
+                        <div className="status-badge" style={{
+                          background: style.bg,
+                          border: `1px solid ${style.border}`,
+                          color: style.color,
+                          fontSize: '0.85rem'
+                        }}>
+                          {confidenceBadge.label}
                         </div>
-                      )}
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                <div className="glass-card" style={{ padding: 20, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
+                  <div className="panel-header" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <p className="eyebrow" style={{ color: 'var(--text)', margin: 0 }}>ID Card</p>
+                    <button className="btn ghost" style={{ padding: '6px 12px', fontSize: '0.8rem', height: 'auto' }} onClick={() => openEditPanel('core')}>Edit</button>
+                  </div>
+                  <div style={{ display: 'grid', gap: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 12 }}>
+                      <span style={{ color: 'var(--muted)' }}>Current Role</span>
+                      <span style={{ fontWeight: 600, textAlign: 'right' }}>{isEmployed ? currentPosition || '—' : 'Not employed'}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 12 }}>
+                      <span style={{ color: 'var(--muted)' }}>Location</span>
+                      <span style={{ fontWeight: 600, textAlign: 'right' }}>{location || '—'}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--muted)' }}>Experience</span>
+                      <span style={{ fontWeight: 600, textAlign: 'right' }}>{isEmployed ? `${experienceYears || 0} Years` : '—'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="glass-card" style={{ padding: 16, background: 'rgba(255,255,255,0.03)' }}>
-                  <div className="panel-header" style={{ marginBottom: 12 }}>
-                    <p className="eyebrow" style={{ color: 'var(--text)' }}>Snapshot</p>
-                    <button className="btn ghost" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => openEditPanel('core')}>Edit</button>
-                  </div>
-                  <div style={{ display: 'grid', gap: 12 }}>
-                    <div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Current role</div>
-                      <div style={{ fontWeight: 600 }}>{isEmployed ? currentPosition || '—' : 'Not employed'}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Location</div>
-                      <div style={{ fontWeight: 600 }}>{location || '—'}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Experience</div>
-                      <div style={{ fontWeight: 600 }}>{isEmployed ? experienceYears || '—' : '—'}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gap: 8 }}>
-                  <p className="eyebrow" style={{ color: 'var(--text)' }}>Verifications</p>
+                <div style={{ display: 'grid', gap: 12 }}>
+                  <p className="eyebrow" style={{ color: 'var(--text)' }}>Verification Status</p>
                   {[
                     {
                       label: 'Resume',
@@ -598,19 +630,39 @@ export default function ApplicantFormPage(): JSX.Element {
                       confidence: projectsConfidence,
                       panel: 'projects' as const
                     },
-                  ].map((item) => {
+                  ].map((item, i) => {
                     const status = getVerificationStatus(item.confidence, item.hasDoc);
+                    const style =
+                      status === 'verified' ? { bg: 'rgba(34, 197, 94, 0.05)', border: 'rgba(34, 197, 94, 0.2)', dot: '#4ade80' } :
+                        status === 'partial' ? { bg: 'rgba(234, 179, 8, 0.05)', border: 'rgba(234, 179, 8, 0.2)', dot: '#facc15' } :
+                          { bg: 'rgba(239, 68, 68, 0.05)', border: 'rgba(239, 68, 68, 0.2)', dot: '#f87171' };
+
                     return (
-                      <div key={item.label} className="glass-card" style={{ padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{item.label}</div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{item.hasDoc ? statusLabel(status) : 'Pending'}</div>
+                      <div key={item.label} className="glass-card reveal show" style={{
+                        padding: '12px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: style.bg,
+                        borderColor: style.border,
+                        transitionDelay: `${i * 0.1}s`
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{
+                            width: 8, height: 8, borderRadius: '50%',
+                            background: style.dot,
+                            boxShadow: `0 0 10px ${style.dot}80`
+                          }} />
+                          <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.label}</span>
                         </div>
-                        <button className="btn ghost" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => openEditPanel(item.panel)}>Upload</button>
+                        <button className="btn text" style={{ padding: 0, fontSize: '0.85rem' }} onClick={() => openEditPanel(item.panel)}>
+                          {item.hasDoc ? 'Update' : 'Upload'} →
+                        </button>
                       </div>
                     );
                   })}
                 </div>
+
               </section>
             </div>
 
@@ -618,66 +670,112 @@ export default function ApplicantFormPage(): JSX.Element {
             <div className="scroll-col">
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, paddingBottom: 60 }}>
                 {/* Skills & Core */}
-                <section className="glass-card">
-                  <div className="dual-header" style={{ marginBottom: 16 }}>
-                    <h3 style={{ margin: 0 }}>Skills & Awards</h3>
-                    <button className="btn ghost" onClick={() => openEditPanel("core")}>Edit</button>
+                <section className="glass-card reveal show reveal-delay-2" style={{ transition: 'transform 0.2s', cursor: 'default' }}>
+                  <div className="dual-header" style={{ marginBottom: 20, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.1)', display: 'grid', placeItems: 'center' }}>⚡️</div>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Skills & Awards</h3>
+                    </div>
+                    <button className="btn ghost" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => openEditPanel("core")}>Edit</button>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-                    {skills.length ? skills.map((s, i) => <span key={i} className="tag">{s}</span>) : <div className="muted">Add skills</div>}
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+                    {skills.length ? skills.map((s, i) => (
+                      <span key={i} className="tag" style={{ background: 'rgba(154,107,255,0.15)', borderColor: 'rgba(154,107,255,0.3)', color: '#e8edf5' }}>{s}</span>
+                    )) : (
+                      <div className="muted" style={{ fontStyle: 'italic', fontSize: '0.9rem' }}>Add your top technical skills...</div>
+                    )}
                   </div>
-                  <div style={{ display: 'grid', gap: 12 }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 4 }}>Awards</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {awards.length ? awards.map((a, i) => <span key={i} className="tag">{a}</span>) : <div className="muted">Add awards</div>}
-                      </div>
+
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 12, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Awards</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {awards.length ? awards.map((a, i) => (
+                        <span key={i} className="tag" style={{ background: 'rgba(79, 209, 197, 0.1)', borderColor: 'rgba(79, 209, 197, 0.25)', color: '#e8edf5' }}>{a}</span>
+                      )) : (
+                        <div className="muted" style={{ fontStyle: 'italic', fontSize: '0.9rem' }}>No awards listed</div>
+                      )}
                     </div>
                   </div>
                 </section>
 
                 {/* Projects */}
-                <section className="glass-card">
-                  <div className="dual-header" style={{ marginBottom: 16 }}>
-                    <h3 style={{ margin: 0 }}>Portfolio</h3>
-                    <button className="btn ghost" onClick={() => openEditPanel("projects")}>Add</button>
+                <section className="glass-card reveal show reveal-delay-3" style={{ transition: 'transform 0.2s' }}>
+                  <div className="dual-header" style={{ marginBottom: 20, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.1)', display: 'grid', placeItems: 'center' }}>🚀</div>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Portfolio</h3>
+                    </div>
+                    <button className="btn ghost" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => openEditPanel("projects")}>Add</button>
                   </div>
-                  <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                  <div style={{ maxHeight: 320, overflowY: 'auto', display: 'grid', gap: 12 }}>
                     {projects.length ? projects.map((p, i) => (
-                      <div key={i} style={{ background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 10, marginBottom: 8, border: '1px solid var(--border)' }}>
-                        <div style={{ fontWeight: 800, marginBottom: 4 }}>{p.title || 'Untitled'}</div>
-                        <div className="muted" style={{ fontSize: '0.9rem' }}>{p.description}</div>
+                      <div key={i} className="glass-card" style={{
+                        padding: 16,
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid var(--border)',
+                        transition: 'background 0.2s'
+                      }}>
+                        <div style={{ fontWeight: 800, marginBottom: 6, fontSize: '1.05rem' }}>{p.title || 'Untitled Project'}</div>
+                        <div className="muted" style={{ fontSize: '0.9rem', lineHeight: 1.5 }}>{p.description}</div>
                       </div>
-                    )) : <div className="muted">Share what you’ve built</div>}
+                    )) : (
+                      <div style={{ padding: 24, border: '1px dashed var(--border)', borderRadius: 12, textAlign: 'center', color: 'var(--muted)' }}>
+                        <p style={{ margin: '0 0 8px' }}>Showcase your best work</p>
+                        <button className="btn text" onClick={() => openEditPanel("projects")}>+ Add Project</button>
+                      </div>
+                    )}
                   </div>
                 </section>
 
                 {/* Education */}
-                <section className="glass-card">
-                  <div className="dual-header" style={{ marginBottom: 16 }}>
-                    <h3 style={{ margin: 0 }}>Education</h3>
-                    <button className="btn ghost" onClick={() => openEditPanel("education")}>Add</button>
-                  </div>
-                  {education.length ? education.map((edu, i) => (
-                    <div key={i} style={{ background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 10, marginBottom: 8, border: '1px solid var(--border)' }}>
-                      <div style={{ fontWeight: 800, marginBottom: 4 }}>{edu.degree}, {edu.school}</div>
-                      <div className="muted" style={{ fontSize: '0.9rem' }}>Graduation: {edu.graduation_year}</div>
+                <section className="glass-card reveal show reveal-delay-3" style={{ transition: 'transform 0.2s' }}>
+                  <div className="dual-header" style={{ marginBottom: 20, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.1)', display: 'grid', placeItems: 'center' }}>🎓</div>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Education</h3>
                     </div>
-                  )) : <div className="muted">Add your schools</div>}
+                    <button className="btn ghost" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => openEditPanel("education")}>Add</button>
+                  </div>
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {education.length ? education.map((edu, i) => (
+                      <div key={i} className="glass-card" style={{ padding: 16, background: 'rgba(255,255,255,0.03)' }}>
+                        <div style={{ fontWeight: 800, marginBottom: 4, fontSize: '1.05rem' }}>{edu.school}</div>
+                        <div style={{ fontSize: '0.95rem', color: 'var(--text)' }}>{edu.degree}</div>
+                        <div className="muted" style={{ fontSize: '0.85rem', marginTop: 4 }}>Class of {edu.graduation_year}</div>
+                      </div>
+                    )) : (
+                      <div style={{ padding: 24, border: '1px dashed var(--border)', borderRadius: 12, textAlign: 'center', color: 'var(--muted)' }}>
+                        <p style={{ margin: '0 0 8px' }}>Add your credentials</p>
+                        <button className="btn text" onClick={() => openEditPanel("education")}>+ Add School</button>
+                      </div>
+                    )}
+                  </div>
                 </section>
 
                 {/* Experience */}
-                <section className="glass-card">
-                  <div className="dual-header" style={{ marginBottom: 16 }}>
-                    <h3 style={{ margin: 0 }}>Experience</h3>
-                    <button className="btn ghost" onClick={() => openEditPanel("experience")}>Add</button>
-                  </div>
-                  {previousPositions.length ? previousPositions.map((pos, i) => (
-                    <div key={i} style={{ background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 10, marginBottom: 8, border: '1px solid var(--border)' }}>
-                      <div style={{ fontWeight: 800, marginBottom: 4 }}>{pos.title} at {pos.org}</div>
-                      <div className="muted" style={{ fontSize: '0.9rem' }}>{pos.start_date} — {pos.end_date}</div>
+                <section className="glass-card reveal show reveal-delay-4" style={{ transition: 'transform 0.2s' }}>
+                  <div className="dual-header" style={{ marginBottom: 20, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.1)', display: 'grid', placeItems: 'center' }}>💼</div>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Experience</h3>
                     </div>
-                  )) : <div className="muted">Add your past roles</div>}
+                    <button className="btn ghost" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => openEditPanel("experience")}>Add</button>
+                  </div>
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {previousPositions.length ? previousPositions.map((pos, i) => (
+                      <div key={i} className="glass-card" style={{ padding: 16, background: 'rgba(255,255,255,0.03)' }}>
+                        <div style={{ fontWeight: 800, marginBottom: 4, fontSize: '1.05rem' }}>{pos.title}</div>
+                        <div style={{ fontSize: '0.95rem', color: 'var(--text)', marginBottom: 4 }}>{pos.org}</div>
+                        <div className="muted" style={{ fontSize: '0.85rem' }}>{pos.start_date} — {pos.end_date}</div>
+                      </div>
+                    )) : (
+                      <div style={{ padding: 24, border: '1px dashed var(--border)', borderRadius: 12, textAlign: 'center', color: 'var(--muted)' }}>
+                        <p style={{ margin: '0 0 8px' }}>No positions added</p>
+                        <button className="btn text" onClick={() => openEditPanel("experience")}>+ Add Role</button>
+                      </div>
+                    )}
+                  </div>
                 </section>
               </div>
             </div>
@@ -687,112 +785,138 @@ export default function ApplicantFormPage(): JSX.Element {
         {/* PANEL 2: EDITOR VIEW */}
         <div className="panel-section">
           <div className="editor-panel-inner">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
-              <button className="btn ghost" onClick={closeEditPanel}>← Back to Dashboard</button>
-              <h2 style={{ margin: 0 }}>
-                {activePanel === 'core' && 'Edit Core Profile'}
-                {activePanel === 'projects' && 'Manage Projects'}
-                {activePanel === 'education' && 'Education & Transcripts'}
-                {activePanel === 'experience' && 'Work Experience'}
-                {activePanel === 'docs' && 'Resume Upload'}
-              </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 40 }}>
+              <button className="btn ghost" onClick={closeEditPanel} style={{ width: 48, height: 48, borderRadius: '50%', padding: 0, display: 'grid', placeItems: 'center', fontSize: '1.2rem', borderColor: 'var(--border)' }}>
+                ←
+              </button>
+              <div>
+                <p className="eyebrow" style={{ margin: 0, color: 'var(--muted)' }}>Editing</p>
+                <h2 className="hero-title" style={{ margin: 0, fontSize: '2.2rem' }}>
+                  {activePanel === 'core' && 'Core Profile'}
+                  {activePanel === 'projects' && 'Projects'}
+                  {activePanel === 'education' && 'Education'}
+                  {activePanel === 'experience' && 'Work Experience'}
+                  {activePanel === 'docs' && 'Documents'}
+                </h2>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="glass-card" style={{ padding: 32, display: 'grid', gap: 24, animation: 'none', border: 'none', background: 'transparent', boxShadow: 'none' }}>
+            <form onSubmit={handleSubmit} className="glass-card reveal show" style={{ padding: 40, display: 'grid', gap: 32, animation: 'none' }}>
 
               {activePanel === 'core' && (
                 <>
-                  <div className="modal-row">
-                    <div className="modal-label">Full Name</div>
-                    <input className="input" value={name} onChange={e => setName(e.target.value)} required />
-                  </div>
-                  <div className="modal-row">
-                    <div className="modal-label">Email</div>
-                    <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-                  </div>
-                  <div className="modal-row">
-                    <div className="modal-label">Age</div>
-                    <input className="input" type="number" value={age} onChange={e => setAge(e.target.value)} />
-                  </div>
-
-                  <div className="modal-row">
-                    <div className="modal-label">Employment</div>
-                    <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-                      <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input type="radio" checked={isEmployed} onChange={() => setIsEmployed(true)} />
-                        Employed
-                      </label>
-                      <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input type="radio" checked={!isEmployed} onChange={() => setIsEmployed(false)} />
-                        Not employed
-                      </label>
+                  <div style={{ display: 'grid', gap: 24 }}>
+                    <h3 style={{ margin: 0, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>Personal Details</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                      <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                        <div className="modal-label">Full Name</div>
+                        <input className="input" value={name} onChange={e => setName(e.target.value)} required />
+                      </div>
+                      <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                        <div className="modal-label">Email</div>
+                        <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                      </div>
+                    </div>
+                    <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                      <div className="modal-label">Age</div>
+                      <input className="input" type="number" value={age} onChange={e => setAge(e.target.value)} style={{ maxWidth: 120 }} />
                     </div>
                   </div>
 
-                  {isEmployed && (
-                    <>
-                      <div className="modal-row">
-                        <div className="modal-label">Current Position</div>
-                        <input className="input" value={currentPosition} onChange={e => setCurrentPosition(e.target.value)} />
-                      </div>
-                      <div className="modal-row">
-                        <div className="modal-label">Yrs Experience</div>
-                        <input className="input" type="number" value={experienceYears} onChange={e => setExperienceYears(e.target.value)} />
-                      </div>
-                      <div className="modal-row">
-                        <div className="modal-label">Salary Exp.</div>
-                        <input className="input" type="number" value={salaryExpectation} onChange={e => setSalaryExpectation(e.target.value)} placeholder="e.g. 120000" />
-                      </div>
-                    </>
-                  )}
+                  <div style={{ display: 'grid', gap: 24 }}>
+                    <h3 style={{ margin: 0, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>Professional Status</h3>
 
-                  <div className="modal-row">
-                    <div className="modal-label">Location</div>
-                    <input className="input" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Sydney, Australia" />
-                  </div>
-                  <div className="modal-row">
-                    <div className="modal-label">Visa Status</div>
-                    <input className="input" value={visaStatus} onChange={e => setVisaStatus(e.target.value)} placeholder="e.g. Citizen, PR, 482 Visa" />
-                  </div>
-                  <div className="modal-row">
-                    <div className="modal-label">Availability</div>
-                    <input className="input" value={availabilityDate} onChange={e => setAvailabilityDate(e.target.value)} placeholder="e.g. Immediate, 4 weeks" />
+                    <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
+                      <div className="modal-label">Employment Status</div>
+                      <div style={{ display: 'flex', gap: 12 }}>
+                        <label className={`btn ${isEmployed ? 'primary' : 'ghost'} `} style={{ cursor: 'pointer', padding: '10px 20px' }}>
+                          <input type="radio" checked={isEmployed} onChange={() => setIsEmployed(true)} style={{ display: 'none' }} />
+                          Currently Employed
+                        </label>
+                        <label className={`btn ${!isEmployed ? 'primary' : 'ghost'} `} style={{ cursor: 'pointer', padding: '10px 20px' }}>
+                          <input type="radio" checked={!isEmployed} onChange={() => setIsEmployed(false)} style={{ display: 'none' }} />
+                          Not Employed
+                        </label>
+                      </div>
+                    </div>
+
+                    {isEmployed && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
+                        <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                          <div className="modal-label">Current Position</div>
+                          <input className="input" value={currentPosition} onChange={e => setCurrentPosition(e.target.value)} />
+                        </div>
+                        <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                          <div className="modal-label">Years of Exp.</div>
+                          <input className="input" type="number" value={experienceYears} onChange={e => setExperienceYears(e.target.value)} />
+                        </div>
+                        <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                          <div className="modal-label">Salary Expectation</div>
+                          <input className="input" type="number" value={salaryExpectation} onChange={e => setSalaryExpectation(e.target.value)} placeholder="e.g. 120000" />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  <div style={{ height: 1, background: 'var(--border)', margin: '10px 0' }} />
+                  <div style={{ display: 'grid', gap: 24 }}>
+                    <h3 style={{ margin: 0, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>Logistics</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
+                      <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                        <div className="modal-label">Location</div>
+                        <input className="input" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Sydney, Australia" />
+                      </div>
+                      <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                        <div className="modal-label">Visa Status</div>
+                        <input className="input" value={visaStatus} onChange={e => setVisaStatus(e.target.value)} placeholder="e.g. Citizen, PR, 482 Visa" />
+                      </div>
+                      <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                        <div className="modal-label">Availability</div>
+                        <input className="input" value={availabilityDate} onChange={e => setAvailabilityDate(e.target.value)} placeholder="e.g. Immediate, 4 weeks" />
+                      </div>
+                    </div>
+                  </div>
 
-                  <ChipInput label="Skills" values={skills} setValues={setSkills} />
-                  <ChipInput label="Awards" values={awards} setValues={setAwards} />
-                  <ChipInput label="Certifications" values={certifications} setValues={setCertifications} />
+                  <div style={{ display: 'grid', gap: 24 }}>
+                    <h3 style={{ margin: 0, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>Tags</h3>
+                    <ChipInput label="Skills" values={skills} setValues={setSkills} />
+                    <ChipInput label="Awards" values={awards} setValues={setAwards} />
+                    <ChipInput label="Certifications" values={certifications} setValues={setCertifications} />
+                  </div>
                 </>
               )}
 
               {activePanel === 'projects' && (
                 <>
-                  {projects.map((p, i) => (
-                    <div key={i} className="glass-card" style={{ padding: 20, marginBottom: 12 }}>
-                      <div className="modal-row">
-                        <div className="modal-label">Project Title</div>
-                        <input
-                          className="input"
-                          value={p.title}
-                          onChange={(e) => updateProject(i, "title", e.target.value)}
-                        />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {projects.map((p, i) => (
+                      <div key={i} className="glass-card" style={{ padding: 24, border: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                          <div className="modal-label" style={{ color: 'var(--accent)' }}>Project {i + 1}</div>
+                          <button type="button" className="btn text" onClick={() => removeProject(i)} style={{ color: '#ef4444' }}>Remove</button>
+                        </div>
+                        <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8, marginBottom: 16 }}>
+                          <div className="modal-label">Title</div>
+                          <input
+                            className="input"
+                            value={p.title}
+                            onChange={(e) => updateProject(i, "title", e.target.value)}
+                            placeholder="e.g. E-commerce Platform"
+                          />
+                        </div>
+                        <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                          <div className="modal-label">Description</div>
+                          <textarea
+                            className="textarea"
+                            value={p.description}
+                            onChange={(e) => updateProject(i, "description", e.target.value)}
+                            placeholder="Describe the tech stack, your role, and the outcome..."
+                            style={{ minHeight: 120 }}
+                          />
+                        </div>
                       </div>
-                      <div className="modal-row">
-                        <div className="modal-label">Description</div>
-                        <textarea
-                          className="textarea"
-                          value={p.description}
-                          onChange={(e) => updateProject(i, "description", e.target.value)}
-                        />
-                      </div>
-                      <button type="button" className="btn ghost" onClick={() => removeProject(i)} style={{ color: '#ef4444', borderColor: '#ef4444' }}>
-                        Remove Project
-                      </button>
-                    </div>
-                  ))}
-                  <button type="button" className="btn ghost" onClick={addProject}>
+                    ))}
+                  </div>
+                  <button type="button" className="btn ghost" onClick={addProject} style={{ width: '100%', padding: 16, borderStyle: 'dashed' }}>
                     + Add Another Project
                   </button>
                 </>
