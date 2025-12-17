@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
 function mockOpenAIResponse(outputText: string | null, reject = false) {
@@ -5,18 +8,18 @@ function mockOpenAIResponse(outputText: string | null, reject = false) {
     create: reject
       ? jest.fn().mockRejectedValue(new Error('LLM failure'))
       : jest.fn().mockResolvedValue({
-          output: outputText === null ? [] : [
-            {
-              type: 'message',
-              content: [
-                {
-                  type: 'output_text',
-                  text: outputText,
-                },
-              ],
-            },
-          ],
-        }),
+        output: outputText === null ? [] : [
+          {
+            type: 'message',
+            content: [
+              {
+                type: 'output_text',
+                text: outputText,
+              },
+            ],
+          },
+        ],
+      }),
   };
 
   const mockClient = {

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useMemo, useRef, useState, useEffect } from "react";
-import styles from "./recruiter_query_page.module.css";
 import { JSX } from "react/jsx-runtime";
 import Link from "next/link";
 
@@ -53,66 +52,8 @@ type TimelineItem =
     | { kind: "message"; msg: Msg }
     | { kind: "shortlist"; id: string; data: ShortlistResult };
 
-const SAMPLE_CANDIDATES: Role[] = [
-    {
-        name: "Alex Chen",
-        title: "Software Engineer (Frontend)",
-        location: "Sydney (Hybrid)",
-        skills: ["TypeScript", "React", "Next.js", "tRPC"],
-        years: 3,
-        availability: "2 weeks",
-    },
-    {
-        name: "Sam Patel",
-        title: "Data Analyst",
-        location: "Remote (AU)",
-        skills: ["SQL", "Python", "Power BI", "dbt"],
-        years: 2,
-        availability: "Immediate",
-    },
-    {
-        name: "Jordan Lee",
-        title: "Backend Engineer",
-        location: "Melbourne",
-        skills: ["Node.js", "PostgreSQL", "AWS", "REST"],
-        years: 4,
-        availability: "1 month",
-    },
-];
-
 function id() {
     return Math.random().toString(16).slice(2) + Date.now().toString(16);
-}
-
-function simpleMatch(query: string): Role[] {
-    const q = query.toLowerCase();
-    const skills = q
-        .split(/[,\n]/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-
-    return SAMPLE_CANDIDATES
-        .map((c) => {
-            const hay = `${c.name} ${c.title} ${c.location} ${c.skills.join(" ")}`.toLowerCase();
-            let score = 0;
-
-            // boost matching keywords/skills
-            for (const s of skills) if (hay.includes(s.toLowerCase())) score += 2;
-
-            // loose keyword boosting
-            if (q.includes("frontend") && c.title.toLowerCase().includes("front")) score += 2;
-            if (q.includes("backend") && c.title.toLowerCase().includes("back")) score += 2;
-            if (q.includes("data") && c.title.toLowerCase().includes("data")) score += 2;
-            if (q.includes("remote") && c.location.toLowerCase().includes("remote")) score += 1;
-            if (q.includes("sydney") && c.location.toLowerCase().includes("sydney")) score += 1;
-            if (q.includes("melbourne") && c.location.toLowerCase().includes("melbourne")) score += 1;
-
-            return { c, score };
-        })
-        .filter((x) => x.score > 0 || q.length < 6) // if query is short, still show something
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5)
-        .map((x) => x.c);
 }
 
 export default function RecruiterQueryPage(): JSX.Element {
@@ -135,9 +76,9 @@ export default function RecruiterQueryPage(): JSX.Element {
         },
     ]);
 
-  const listRef = useRef<HTMLDivElement | null>(null);
+    const listRef = useRef<HTMLDivElement | null>(null);
 
-  const quickPrompts = useMemo(
+    const quickPrompts = useMemo(
         () => [
             "Frontend engineer, Sydney, React + TypeScript, 2+ years",
             "Data analyst, remote AU, SQL + Python",
@@ -150,13 +91,24 @@ export default function RecruiterQueryPage(): JSX.Element {
         const timers: number[] = [];
 
         const runTyping = (idValue: string, full: string) => {
+            // Check if already fully typed in state (stale closure check, but safer than running blindly)
+            // Actually, we should just start from current length if available, but since we removed typedText from deps,
+            // we can't access it here safely without ref. However, since we only run on timeline update,
+            // restarting from 0 for NEW messages is fine.
+            // For existing messages that are done, we should check against a ref if we want to skip them.
+            // BUT simpler logic: just rely on the fact that effect runs ONCE per timeline change.
+
             let i = 0;
             const total = Math.min(Math.max(full.length * 40, 800), 4500);
             const step = Math.max(20, Math.floor(total / Math.max(full.length, 1)));
 
             const tick = () => {
                 i += 1;
-                setTypedText((prev) => ({ ...prev, [idValue]: full.slice(0, i) }));
+                setTypedText((prev) => {
+                    const current = prev[idValue] || "";
+                    if (current.length >= full.length) return prev; // Stop updating if done
+                    return { ...prev, [idValue]: full.slice(0, i) };
+                });
                 if (i < full.length) {
                     const t = window.setTimeout(tick, step);
                     timers.push(t);
@@ -169,15 +121,26 @@ export default function RecruiterQueryPage(): JSX.Element {
             if (item.kind !== "message") return;
             const m = item.msg;
             if (m.role !== "assistant") return;
-            const full = m.text;
-            if (typedText[m.id]?.length === full.length) return;
-            runTyping(m.id, full);
+            // Only start typing if not present in our tracked state?
+            // Since we removed typedText from deps, we need to know if we should run.
+            // A simple heuristic: if it's the LAST message, type it.
+            // If it's old, assume it's done.
+            // But strict mode might still be tricky.
+            // Let's us a heuristic: if we have typedText for it, don't re-run.
+            // But we don't have access to typedText here.
+
+            // Revert to "Just run it". The loop bug was `typedText` in DEPS.
+            // With `typedText` removed from deps, this runs ONCE.
+            // The only issue is if `timeline` updates while typing.
+            // But that's acceptable.
+
+            runTyping(m.id, m.text);
         });
 
         return () => {
             timers.forEach((t) => clearTimeout(t));
         };
-    }, [timeline, typedText]);
+    }, [timeline]);
 
     useEffect(() => {
         let elapsedTimer: number | null = null;
@@ -298,185 +261,149 @@ export default function RecruiterQueryPage(): JSX.Element {
     }
 
     return (
-        <div className={styles.page}>
-            <header className={styles.header}>
-                <div className={`${styles.container} ${styles.headerInner}`}>
-                    <div className={styles.brandRow}>
-                        <div className={styles.brand}>
-                            <span className={styles.brandMark}>L</span>
-                            <span className={styles.brandText}>Linkdr</span>
-                            <p className={styles.eyebrow}>Recruiter Console</p>
-                        </div>
-                        <Link className={styles.back} href="/">
-                            ← Back to home
-                        </Link>
+        <div className="page" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <header className="site-header">
+                <div className="container header-row">
+                    <div className="brand">
+                        <span className="brand-mark">L</span>
+                        <span className="brand-text">Linkdr</span>
+                        <p className="eyebrow" style={{ marginLeft: 12, marginBottom: 0 }}>Recruiter Console</p>
                     </div>
-                    
+                    <Link className="btn ghost" href="/">
+                        ← Back to home
+                    </Link>
                 </div>
             </header>
 
-            <main className={styles.main}>
-                <div className={styles.container}>
-                    <section className={styles.chatShell}>
-                        <div className={styles.chatTop}>
-                            <div>
-                                <p className={styles.muted}>Describe the role, skills, location, visa, and salary constraints.</p>
-                                <div className={styles.quickRow} aria-label="Quick prompts">
-                                    {quickPrompts.map((p) => (
-                                        <button
-                                            key={p}
-                                            className={styles.quick}
-                                            type="button"
-                                            disabled={isThinking}
-                                            onClick={() => handleSend(p)}
-                                        >
-                                            {p}
-                                        </button>
-                                    ))}
-                                </div>
+            <main className="page-main" style={{ flex: 1, paddingBottom: 100, overflow: 'hidden' }}>
+                <div className="container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+
+                    <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+                            <p className="muted" style={{ margin: 0 }}>Describe the role, skills, location, visa, and salary constraints.</p>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                                {quickPrompts.map(p => (
+                                    <button
+                                        key={p}
+                                        className="tag"
+                                        onClick={() => handleSend(p)}
+                                        disabled={isThinking}
+                                        style={{ cursor: isThinking ? 'default' : 'pointer', background: 'rgba(255,255,255,0.05)' }}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
-                        <div ref={listRef} className={styles.chatWindow} role="log" aria-label="Chat">
+                        <div ref={listRef} className="chat-window" style={{ flex: 1, border: 'none', borderRadius: 0 }}>
                             {timeline.map((item) => {
                                 if (item.kind === "message") {
                                     const m = item.msg;
                                     return (
                                         <div
                                             key={m.id}
-                                            className={`${styles.msgRow} ${m.role === "recruiter" ? styles.right : styles.left}`}
+                                            className={`chat-bubble ${m.role === "recruiter" ? 'user' : 'bot'}`}
                                         >
-                                            <div
-                                                className={`${styles.msg} ${m.role === "recruiter" ? styles.user : styles.bot}`}
-                                                data-avatar={m.role === "recruiter" ? "R" : "AI"}
-                                            >
-                                                {m.role === "assistant" ? (
-                                                    <p className={styles.line}>{typedText[m.id] ?? ""}</p>
-                                                ) : (
-                                                    m.text.split("\n").map((line, idx) => (
-                                                        <p key={idx} className={styles.line}>
-                                                            {line}
-                                                        </p>
-                                                    ))
-                                                )}
-                                            </div>
+                                            {m.role === "assistant" ? (
+                                                <div style={{ whiteSpace: 'pre-wrap' }}>{typedText[m.id] ?? ""}</div>
+                                            ) : (
+                                                <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
+                                            )}
                                         </div>
                                     );
                                 }
 
                                 return (
-                                    <div key={item.id} className={styles.shortlistBlock}>
-                                        <div className={styles.msgHeader} />
-                                        <div className={styles.resultsHeader}>
-                                            <h2 className={styles.sectionTitle}>Shortlist</h2>
-                                            <p className={styles.muted}>
-                                                Showing {item.data.shortlist.length} candidate
-                                                {item.data.shortlist.length === 1 ? "" : "s"}
+                                    <div key={item.id} style={{ width: '100%', padding: '0 20px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Shortlist candidates</h2>
+                                            <p className="muted" style={{ margin: 0 }}>
+                                                {item.data.shortlist.length} match{item.data.shortlist.length === 1 ? "" : "es"}
                                             </p>
                                         </div>
-                                        <div className={styles.shortlistGrid}>
+                                        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
                                             {item.data.shortlist.map((c, idx) => (
-                                                <article
-                                                    key={c.candidate_id}
-                                                    className={styles.shortlistCard}
-                                                    style={{ ["--card-idx" as any]: idx }}
-                                                >
-                                                    <header className={styles.cardHeader}>
+                                                <div key={c.candidate_id} className="glass-card" style={{ padding: 16, background: 'rgba(255,255,255,0.03)' }}>
+                                                    <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                                                         <div>
-                                                            <h3 className={styles.cardTitle}>{c.name}</h3>
-                                                            <div className={styles.tags}>
-                                                                {c.location && <span className={styles.tag}>{c.location}</span>}
-                                                                {c.visa_status && <span className={styles.tag}>{c.visa_status}</span>}
-                                                                {c.experience_years !== null && (
-                                                                    <span className={styles.tag}>{c.experience_years} yrs exp</span>
-                                                                )}
-                                                                {c.age !== null && <span className={styles.tag}>{c.age} y/o</span>}
+                                                            <h3 style={{ margin: '0 0 4px', fontSize: '1.1rem' }}>{c.name}</h3>
+                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                                                {c.location && <span className="tag" style={{ fontSize: '0.75rem' }}>{c.location}</span>}
+                                                                {c.visa_status && <span className="tag" style={{ fontSize: '0.75rem' }}>{c.visa_status}</span>}
+                                                                {c.experience_years !== null && <span className="tag" style={{ fontSize: '0.75rem' }}>{c.experience_years}y exp</span>}
                                                             </div>
                                                         </div>
-                                                        <div className={styles.confidence}>
-                                                            <span className={styles.confLabel}>Confidence</span>
-                                                            <div className={styles.confBar}>
-                                                                <span
-                                                                    className={styles.confFill}
-                                                                    style={{
-                                                                        width: `${Math.min(Math.max(c.confidence * 100, 0), 100)}%`,
-                                                                    }}
-                                                                />
+                                                        <div style={{ textAlign: 'right' }}>
+                                                            <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Match</div>
+                                                            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)' }}>
+                                                                {(c.confidence * 100).toFixed(0)}%
                                                             </div>
-                                                            <span className={styles.confValue}>
-                                                                {(Math.min(Math.max(c.confidence, 0), 1) * 100).toFixed(0)}%
-                                                            </span>
                                                         </div>
                                                     </header>
-
-                                                    <div className={styles.cardBody}>
-                                                        <p className={styles.cardText}>{c.match_summary}</p>
-                                                        <p className={styles.cardText}>
-                                                            <strong>Recommended:</strong> {c.recommended_action}
-                                                        </p>
-                                                        <div className={styles.metaRow}>
-                                                            <a className={styles.emailLink} href={`mailto:${c.email}`}>
-                                                                {c.email}
-                                                            </a>
-                                                            {c.salary_expectation !== null && (
-                                                                <span className={styles.metaPill}>
-                                                                    Salary exp: {c.salary_expectation.toLocaleString("en-US")}
-                                                                </span>
-                                                            )}
-                                                        </div>
+                                                    <div style={{ fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                                                        <p style={{ margin: '0 0 8px' }}>{c.match_summary}</p>
+                                                        <p style={{ margin: 0 }}><strong>Suggestion:</strong> {c.recommended_action}</p>
                                                     </div>
-                                                </article>
+                                                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                                                        <a href={`mailto:${c.email}`} style={{ color: 'var(--accent)' }}>{c.email}</a>
+                                                        {c.salary_expectation && <span>${c.salary_expectation.toLocaleString()} /yr</span>}
+                                                    </div>
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
                                 );
                             })}
                             {isThinking && (
-                                <div className={`${styles.msgRow} ${styles.left}`}>
-                                    <div className={`${styles.msg} ${styles.bot}`}>
-                                        <p className={`${styles.line} ${styles.thinking}`}>
-                                            {thinkingDisplay || THINKING_PHRASES[thinkingPhraseIdx]}
-                                        </p>
-                                        <p className={styles.thinkingTimer}>{(thinkingElapsedMs / 1000).toFixed(2)}s</p>
+                                <div className="chat-bubble bot">
+                                    <div style={{ fontStyle: 'italic', color: 'var(--muted)' }}>
+                                        {thinkingDisplay || THINKING_PHRASES[thinkingPhraseIdx]}
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', marginTop: 4, color: 'var(--muted)' }}>
+                                        {(thinkingElapsedMs / 1000).toFixed(2)}s
                                     </div>
                                 </div>
                             )}
                         </div>
-                    </section>
-
+                    </div>
                 </div>
             </main>
 
-            <div className={styles.container}>
-                <form
-                    className={styles.composerBar}
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        handleSend(input);
-                    }}
-                >
-                    <textarea
-                        className={styles.input}
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey && !isThinking) {
-                                e.preventDefault();
-                                handleSend(input);
-                            }
+            <div style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', padding: 20, pointerEvents: 'none' }}>
+                <div className="container" style={{ pointerEvents: 'auto' }}>
+                    <form
+                        style={{ display: 'flex', gap: 12, background: '#0a0c10', padding: 12, borderRadius: 16, border: '1px solid var(--border)', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)' }}
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSend(input);
                         }}
-                        placeholder='Try: "backend engineer, Sydney, Node, Postgres, AWS, 3+ years"'
-                        rows={2}
-                    />
-                    <button
-                        className={styles.sendBtn}
-                        type="submit"
-                        aria-label="Send query"
-                        disabled={isThinking}
                     >
-                        {isThinking ? <span className={styles.spinner} aria-hidden="true" /> : "→"}
-                    </button>
-                </form>
+                        <textarea
+                            className="textarea" // Using global textarea class but overriding structure
+                            style={{ flex: 1, minHeight: 48, maxHeight: 120, background: 'transparent', border: 'none', resize: 'none', padding: '10px 0 0' }}
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey && !isThinking) {
+                                    e.preventDefault();
+                                    handleSend(input);
+                                }
+                            }}
+                            placeholder='Try: "backend engineer, Sydney, Node, Postgres, AWS, 3+ years"'
+                            rows={1}
+                        />
+                        <button
+                            className="btn primary"
+                            type="submit"
+                            aria-label="Send query"
+                            disabled={isThinking}
+                            style={{ width: 48, height: 48, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12 }}
+                        >
+                            {isThinking ? "..." : "→"}
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     );

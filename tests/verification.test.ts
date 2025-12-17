@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import { extractLinksFromText } from '@/lib/verification';
 
 describe('verification helpers', () => {

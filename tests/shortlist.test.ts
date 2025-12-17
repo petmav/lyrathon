@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { createShortlist } from '@/lib/shortlist';
 import type { CandidateResult } from '@/lib/candidate-search';

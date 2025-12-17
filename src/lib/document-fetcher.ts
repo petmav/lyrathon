@@ -68,12 +68,12 @@ export async function fetchDocumentText(
       const parsed = await pdfParse(buffer);
       const text = parsed?.text?.trim();
       if (!text) return null;
-      return { text: truncate(text), bytes: buffer.byteLength, contentType };
+      return { text: truncate(text), bytes: buffer.byteLength, contentType: contentType ?? undefined };
     }
 
     const decoded = buffer.toString('utf-8').trim();
     if (!decoded) return null;
-    return { text: truncate(decoded), bytes: buffer.byteLength, contentType };
+    return { text: truncate(decoded), bytes: buffer.byteLength, contentType: contentType ?? undefined };
   } catch (error) {
     // Caller will handle logging; return null on any failure to avoid blocking verification.
     return null;
