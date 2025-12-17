@@ -57,6 +57,11 @@ function id() {
     return Math.random().toString(16).slice(2) + Date.now().toString(16);
 }
 
+type Conversation = {
+    conversation_id: string | null;
+    title: string;
+};
+
 export default function RecruiterQueryPage(): JSX.Element {
     const router = useRouter();
 
@@ -85,9 +90,9 @@ export default function RecruiterQueryPage(): JSX.Element {
         },
     ]);
 
-    const [conversations, setConversations] = useState([]);
-    console.log(conversations);
+    const [conversations, setConversations] = useState<Conversation[]>([]);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -114,7 +119,7 @@ export default function RecruiterQueryPage(): JSX.Element {
                 }
 
                 const conversations = await res.json();
-                setConversations([...conversations, {title: 'New Conversation', conversation_id: null}]);
+                setConversations([...conversations, { title: 'New Conversation', conversation_id: null }]);
             } catch (error) {
                 console.error("Error fetching conversation history:", error);
             }
@@ -127,13 +132,6 @@ export default function RecruiterQueryPage(): JSX.Element {
         const timers: number[] = [];
 
         const runTyping = (idValue: string, full: string) => {
-            // Check if already fully typed in state (stale closure check, but safer than running blindly)
-            // Actually, we should just start from current length if available, but since we removed typedText from deps,
-            // we can't access it here safely without ref. However, since we only run on timeline update,
-            // restarting from 0 for NEW messages is fine.
-            // For existing messages that are done, we should check against a ref if we want to skip them.
-            // BUT simpler logic: just rely on the fact that effect runs ONCE per timeline change.
-
             let i = 0;
             const total = Math.min(Math.max(full.length * 40, 800), 4500);
             const step = Math.max(20, Math.floor(total / Math.max(full.length, 1)));
@@ -142,7 +140,7 @@ export default function RecruiterQueryPage(): JSX.Element {
                 i += 1;
                 setTypedText((prev) => {
                     const current = prev[idValue] || "";
-                    if (current.length >= full.length) return prev; // Stop updating if done
+                    if (current.length >= full.length) return prev;
                     return { ...prev, [idValue]: full.slice(0, i) };
                 });
                 if (i < full.length) {
@@ -157,19 +155,6 @@ export default function RecruiterQueryPage(): JSX.Element {
             if (item.kind !== "message") return;
             const m = item.msg;
             if (m.role !== "assistant") return;
-            // Only start typing if not present in our tracked state?
-            // Since we removed typedText from deps, we need to know if we should run.
-            // A simple heuristic: if it's the LAST message, type it.
-            // If it's old, assume it's done.
-            // But strict mode might still be tricky.
-            // Let's us a heuristic: if we have typedText for it, don't re-run.
-            // But we don't have access to typedText here.
-
-            // Revert to "Just run it". The loop bug was `typedText` in DEPS.
-            // With `typedText` removed from deps, this runs ONCE.
-            // The only issue is if `timeline` updates while typing.
-            // But that's acceptable.
-
             runTyping(m.id, m.text);
         });
 
@@ -240,7 +225,7 @@ export default function RecruiterQueryPage(): JSX.Element {
         setTimeline((items) => [...items, { kind: "message", msg: message }]);
     }
 
-    const fetchConversation = async (conversationId: string) => {
+    const fetchConversation = async (conversationId: string | null) => {
         if (conversationId === null) {
             setTimeline([
                 {
@@ -254,6 +239,7 @@ export default function RecruiterQueryPage(): JSX.Element {
                     },
                 },
             ]);
+            setCurrentConversationId(null);
             return;
         }
         try {
@@ -393,222 +379,334 @@ export default function RecruiterQueryPage(): JSX.Element {
     const hasMessages = timeline.length > 1;
 
     return (
-        <div className="page" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <header className="site-header">
-                <div className="container header-row">
+        <div className="page" style={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+            <header className="site-header" style={{ zIndex: 50 }}>
+                <div className="container header-row" style={{ maxWidth: '100%' }}>
                     <div className="brand" style={{ gap: 0, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                        <button
+                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                            className="btn ghost"
+                            style={{ padding: 8, marginRight: 16, display: 'grid', placeItems: 'center', color: 'var(--text)' }}
+                        >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="3" y1="12" x2="21" y2="12"></line>
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <line x1="3" y1="18" x2="21" y2="18"></line>
+                            </svg>
+                        </button>
                         <span className="brand-mark">L</span>
                         <span className="brand-text" style={{ marginLeft: 24 }}>Linkdr</span>
                         <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 24px' }} />
                         <p className="eyebrow" style={{ margin: 0, fontSize: '0.85rem', letterSpacing: '0.05em', color: 'var(--muted)' }}>RECRUITER CONSOLE</p>
                     </div>
-                    <Link className="btn ghost" href="/">
-                        ← Back to home
-                    </Link>
                 </div>
-                {/* Logout positioned to the far-right edge of the header */}
                 <div className='logoutWrap'>
-                    <button onClick={handleLogout} style={{ color: 'white', background: 'none', border: 'none', cursor: 'pointer' }}>
-                        Logout
-                    </button>
+                    {/* ... (keep logout) */}
                 </div>
             </header>
 
-            <main className="page-main" style={{ flex: 1, paddingBottom: 120, paddingTop: 90 }}>
-                <div className="container" style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            {/* SIDEBAR DRAWER */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    width: 320,
+                    background: 'rgba(10, 12, 18, 0.8)',
+                    backdropFilter: 'blur(24px)',
+                    borderRight: '1px solid var(--border)',
+                    zIndex: 49,
+                    transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+                    transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    paddingTop: 80 // Header height offset
+                }}
+            >
+                <div style={{ padding: 24 }}>
+                    <button
+                        onClick={() => {
+                            fetchConversation(null);
+                            setIsSidebarOpen(false);
+                        }}
+                        className="btn secondary"
+                        style={{ width: '100%', justifyContent: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}
+                    >
+                        <span>+</span> New Query
+                    </button>
+                </div>
 
-                    {/* Hero Empty State */}
-                    {!hasMessages && (
-                        <div className={`hero-content reveal ${!hasMessages ? "show reveal-delay-0" : ""}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', paddingBottom: 100 }}>
-                            <p className="eyebrow">AI Recruiter</p>
-                            <h1 className="hero-title" style={{ maxWidth: 800 }}>
-                                Who are you hiring today?
-                            </h1>
-                            <p className="hero-subtitle" style={{ maxWidth: 600, margin: '20px auto 40px' }}>
-                                Describe the ideal candidate using natural language. I&apos;ll handle the boolean logic, vector matching, and salary negotiation checks.
-                            </p>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px 20px' }}>
+                    <p className="eyebrow" style={{ padding: '0 12px', marginBottom: 12, fontSize: '0.75rem', opacity: 0.7 }}>History</p>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 4 }}>
+                        {conversations.map((c, i) => (
+                            <li key={c.conversation_id || 'new'}
+                                style={{
+                                    opacity: isSidebarOpen ? 1 : 0,
+                                    transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-10px)',
+                                    transition: `opacity 0.3s ease ${i * 0.05}s, transform 0.3s ease ${i * 0.05}s`
+                                }}
+                            >
+                                <button
+                                    onClick={() => {
+                                        fetchConversation(c.conversation_id);
+                                        setIsSidebarOpen(false);
+                                    }}
+                                    className="btn-reset"
+                                    style={{
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        padding: '12px 16px',
+                                        borderRadius: 12,
+                                        fontSize: '0.9rem',
+                                        color: currentConversationId === c.conversation_id ? 'var(--text)' : 'var(--muted)',
+                                        background: currentConversationId === c.conversation_id ? 'linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))' : 'transparent',
+                                        border: currentConversationId === c.conversation_id ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
+                                        transition: 'all 0.2s',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        cursor: 'pointer'
+                                    }}
+                                    onMouseEnter={e => {
+                                        if (currentConversationId !== c.conversation_id) {
+                                            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                                            e.currentTarget.style.color = 'var(--text)';
+                                        }
+                                    }}
+                                    onMouseLeave={e => {
+                                        if (currentConversationId !== c.conversation_id) {
+                                            e.currentTarget.style.background = 'transparent';
+                                            e.currentTarget.style.color = 'var(--muted)';
+                                        }
+                                    }}
+                                >
+                                    {c.title || 'Untitled Query'}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
 
-                            <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', width: '100%', maxWidth: 900 }}>
-                                {quickPrompts.map((p, i) => (
-                                    <button
-                                        key={p}
-                                        className="glass-card btn-reset"
-                                        onClick={() => handleSend(p)}
-                                        disabled={isThinking}
-                                        style={{
-                                            textAlign: 'left',
-                                            padding: 24,
-                                            cursor: 'pointer',
-                                            transition: 'transform 0.2s, background 0.2s',
-                                            background: 'rgba(255,255,255,0.03)'
-                                        }}
-                                        onMouseEnter={e => {
-                                            e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                                            e.currentTarget.style.transform = 'translateY(-2px)';
-                                        }}
-                                        onMouseLeave={e => {
-                                            e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                                            e.currentTarget.style.transform = 'translateY(0)';
-                                        }}
-                                    >
-                                        <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Example {i + 1}</div>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--muted)', lineHeight: 1.4 }}>{p}</div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+            {/* BACKDROP */}
+            {isSidebarOpen && (
+                <div
+                    onClick={() => setIsSidebarOpen(false)}
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.4)',
+                        backdropFilter: 'blur(2px)',
+                        zIndex: 48,
+                        transition: 'opacity 0.3s'
+                    }}
+                />
+            )}
 
-                    {/* Chat Interface */}
-                    {hasMessages && (
-                        <div ref={listRef} className="chat-window" style={{ border: 'none', background: 'transparent', height: 'auto', overflow: 'visible' }}>
-                            {timeline.slice(1).map((item) => { // Skip the initial prompt message in chat view
-                                if (item.kind === "message") {
-                                    const m = item.msg;
-                                    const isUser = m.role === "recruiter";
-                                    return (
-                                        <div key={m.id} className={`chat-row reveal show ${isUser ? 'user' : 'bot'}`} style={{ display: 'flex', flexDirection: 'row', gap: 16, marginBottom: 24, justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
-                                            {!isUser && (
-                                                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, var(--accent), var(--accent-2))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 900, flexShrink: 0, boxShadow: 'var(--shadow)' }}>L</div>
-                                            )}
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+                {/* REMOVED OLD SIDEBAR */}
 
-                                            <div className="chat-bubble"
+                {/* MAIN CONTENT AREA */}
+                <main className="page-main" style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <div className="scroll-container" style={{ flex: 1, overflowY: 'auto', padding: '40px 0 120px' }} ref={listRef}>
+                        <div className="container" style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', position: 'relative', width: '100%', maxWidth: 1000, margin: '0 auto' }}>
+
+                            {/* Hero Empty State */}
+                            {!hasMessages && (
+                                <div className={`hero-content reveal ${!hasMessages ? "show reveal-delay-0" : ""}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', paddingBottom: 100 }}>
+                                    <p className="eyebrow">AI Recruiter</p>
+                                    <h1 className="hero-title" style={{ maxWidth: 800 }}>
+                                        Who are you hiring today?
+                                    </h1>
+                                    <p className="hero-subtitle" style={{ maxWidth: 600, margin: '20px auto 40px' }}>
+                                        Describe the ideal candidate using natural language. I&apos;ll handle the boolean logic, vector matching, and salary negotiation checks.
+                                    </p>
+
+                                    <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', width: '100%', maxWidth: 900 }}>
+                                        {quickPrompts.map((p, i) => (
+                                            <button
+                                                key={p}
+                                                className="glass-card btn-reset"
+                                                onClick={() => handleSend(p)}
+                                                disabled={isThinking}
                                                 style={{
-                                                    background: isUser ? 'linear-gradient(135deg, var(--accent), var(--accent-2))' : 'rgba(255,255,255,0.05)',
-                                                    color: isUser ? '#050712' : 'var(--text)',
-                                                    border: isUser ? 'none' : '1px solid var(--border)',
-                                                    backdropFilter: 'blur(12px)',
-                                                    borderRadius: 24,
-                                                    padding: '16px 24px',
-                                                    maxWidth: '80%',
-                                                    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                                                    order: isUser ? 1 : 2
+                                                    textAlign: 'left',
+                                                    padding: 24,
+                                                    cursor: 'pointer',
+                                                    transition: 'transform 0.2s, background 0.2s',
+                                                    background: 'rgba(255,255,255,0.03)'
+                                                }}
+                                                onMouseEnter={e => {
+                                                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                                }}
+                                                onMouseLeave={e => {
+                                                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                                                    e.currentTarget.style.transform = 'translateY(0)';
                                                 }}
                                             >
-                                                {m.role === "assistant" ? (
-                                                    <div style={{ whiteSpace: 'pre-wrap' }}>{typedText[m.id] ?? m.text}</div>
-                                                ) : (
-                                                    <div style={{ whiteSpace: 'pre-wrap', fontWeight: 500 }}>{m.text}</div>
-                                                )}
-                                            </div>
-
-                                            {isUser && (
-                                                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text)', flexShrink: 0, order: 2 }}>R</div>
-                                            )}
-                                        </div>
-                                    );
-                                }
-
-                                return (
-                                    <div key={item.id} className="reveal show" style={{ width: '100%', padding: '20px 0 40px', maxWidth: 1000, margin: '0 auto' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                                            <h2 className="section-title" style={{ fontSize: '1.5rem' }}>Shortlist Candidates</h2>
-                                            <span className="badge">{item.data.shortlist.length} matches</span>
-                                        </div>
-                                        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-                                            {item.data.shortlist.map((c, idx) => (
-                                                <div key={c.candidate_id} className="glass-card" style={{ padding: 20, transition: 'transform 0.2s', cursor: 'pointer' }}
-                                                    onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
-                                                    onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                                                >
-                                                    <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                                                        <div>
-                                                            <h3 style={{ margin: '0 0 4px', fontSize: '1.2rem' }}>{c.name}</h3>
-                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                                                {c.location && <span className="tag">{c.location}</span>}
-                                                                {c.experience_years !== null && <span className="tag">{c.experience_years}y exp</span>}
-                                                            </div>
-                                                        </div>
-                                                        <div style={{ textAlign: 'right' }}>
-                                                            <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Match</div>
-                                                            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent)' }}>
-                                                                {(c.confidence * 100).toFixed(0)}%
-                                                            </div>
-                                                        </div>
-                                                    </header>
-                                                    <div style={{ fontSize: '0.95rem', lineHeight: 1.6, color: 'var(--muted)', marginBottom: 16 }}>
-                                                        {c.match_summary}
-                                                    </div>
-                                                    <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
-                                                        <span style={{ color: 'var(--text)' }}>{c.recommended_action}</span>
-                                                        <button className="btn text" style={{ padding: 0 }}>View Profile →</button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                            {/* Thinking State */}
-                            {isThinking && (
-                                <div className="chat-row reveal show bot" style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-                                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, var(--accent), var(--accent-2))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 900, flexShrink: 0, boxShadow: 'var(--shadow)' }}>L</div>
-                                    <div className="chat-bubble" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 24, padding: '16px 24px', border: '1px solid var(--border)', backdropFilter: 'blur(12px)' }}>
-                                        <div style={{ fontStyle: 'italic', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <span>{thinkingDisplay || THINKING_PHRASES[thinkingPhraseIdx]}</span>
-                                            <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{(thinkingElapsedMs / 1000).toFixed(1)}s</span>
-                                        </div>
+                                                <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Example {i + 1}</div>
+                                                <div style={{ fontSize: '0.9rem', color: 'var(--muted)', lineHeight: 1.4 }}>{p}</div>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             )}
-                            <div style={{ height: 100 }} />
-                        </div>
-                    )}
-                </div>
-            </main>
 
-            {/* Floating Input Capsule */}
-            <div style={{
-                position: 'fixed',
-                bottom: 32,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: 'min(720px, 90vw)',
-                zIndex: 40
-            }}>
-                <div className="glass-card" style={{ padding: 8, backdropFilter: 'blur(20px)', background: 'rgba(10, 12, 20, 0.65)', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', borderRadius: 20 }}>
-                    <form
-                        style={{ display: 'flex', gap: 12, alignItems: 'center' }}
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            handleSend(input);
-                        }}
-                    >
-                        <textarea
-                            className="textarea"
-                            style={{
-                                flex: 1,
-                                minHeight: 48,
-                                maxHeight: 120,
-                                background: 'transparent',
-                                border: 'none',
-                                resize: 'none',
-                                padding: '12px 16px',
-                                fontSize: '1rem',
-                                color: 'var(--text)'
-                            }}
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey && !isThinking) {
+                            {/* Chat Interface */}
+                            {hasMessages && (
+                                <div className="chat-window" style={{ border: 'none', background: 'transparent', height: 'auto', overflow: 'visible' }}>
+                                    {timeline.slice(1).map((item) => { // Skip the initial prompt message in chat view
+                                        if (item.kind === "message") {
+                                            const m = item.msg;
+                                            const isUser = m.role === "recruiter";
+                                            return (
+                                                <div key={m.id} className={`chat-row reveal show ${isUser ? 'user' : 'bot'}`} style={{ display: 'flex', flexDirection: 'row', gap: 16, marginBottom: 24, justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+                                                    {!isUser && (
+                                                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, var(--accent), var(--accent-2))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 900, flexShrink: 0, boxShadow: 'var(--shadow)' }}>L</div>
+                                                    )}
+
+                                                    <div className="chat-bubble"
+                                                        style={{
+                                                            background: isUser ? 'linear-gradient(135deg, var(--accent), var(--accent-2))' : 'rgba(255,255,255,0.05)',
+                                                            color: isUser ? '#050712' : 'var(--text)',
+                                                            border: isUser ? 'none' : '1px solid var(--border)',
+                                                            backdropFilter: 'blur(12px)',
+                                                            borderRadius: 24,
+                                                            padding: '16px 24px',
+                                                            maxWidth: '80%',
+                                                            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                                                            order: isUser ? 1 : 2
+                                                        }}
+                                                    >
+                                                        {m.role === "assistant" ? (
+                                                            <div style={{ whiteSpace: 'pre-wrap' }}>{typedText[m.id] ?? m.text}</div>
+                                                        ) : (
+                                                            <div style={{ whiteSpace: 'pre-wrap', fontWeight: 500 }}>{m.text}</div>
+                                                        )}
+                                                    </div>
+
+                                                    {isUser && (
+                                                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text)', flexShrink: 0, order: 2 }}>R</div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div key={item.id} className="reveal show" style={{ width: '100%', padding: '20px 0 40px', maxWidth: 1000, margin: '0 auto' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                                    <h2 className="section-title" style={{ fontSize: '1.5rem' }}>Shortlist Candidates</h2>
+                                                    <span className="badge">{item.data.shortlist.length} matches</span>
+                                                </div>
+                                                <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+                                                    {item.data.shortlist.map((c, idx) => (
+                                                        <div key={c.candidate_id} className="glass-card" style={{ padding: 20, transition: 'transform 0.2s', cursor: 'pointer' }}
+                                                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
+                                                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                                                        >
+                                                            <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                                                                <div>
+                                                                    <h3 style={{ margin: '0 0 4px', fontSize: '1.2rem' }}>{c.name}</h3>
+                                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                                                        {c.location && <span className="tag">{c.location}</span>}
+                                                                        {c.experience_years !== null && <span className="tag">{c.experience_years}y exp</span>}
+                                                                    </div>
+                                                                </div>
+                                                                <div style={{ textAlign: 'right' }}>
+                                                                    <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Match</div>
+                                                                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent)' }}>
+                                                                        {(c.confidence * 100).toFixed(0)}%
+                                                                    </div>
+                                                                </div>
+                                                            </header>
+                                                            <div style={{ fontSize: '0.95rem', lineHeight: 1.6, color: 'var(--muted)', marginBottom: 16 }}>
+                                                                {c.match_summary}
+                                                            </div>
+                                                            <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                                                                <span style={{ color: 'var(--text)' }}>{c.recommended_action}</span>
+                                                                <button className="btn text" style={{ padding: 0 }}>View Profile →</button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {/* Thinking State */}
+                                    {isThinking && (
+                                        <div className="chat-row reveal show bot" style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+                                            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, var(--accent), var(--accent-2))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 900, flexShrink: 0, boxShadow: 'var(--shadow)' }}>L</div>
+                                            <div className="chat-bubble" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 24, padding: '16px 24px', border: '1px solid var(--border)', backdropFilter: 'blur(12px)' }}>
+                                                <div style={{ fontStyle: 'italic', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <span>{thinkingDisplay || THINKING_PHRASES[thinkingPhraseIdx]}</span>
+                                                    <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{(thinkingElapsedMs / 1000).toFixed(1)}s</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div style={{ height: 100 }} />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Floating Input Capsule - Repositioned relative to main content area to avoid sidebar overlap if sticking to screen */}
+                    <div style={{
+                        position: 'absolute', // Changed to absolute within the active relative container
+                        bottom: 32,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 'min(720px, 90%)',
+                        zIndex: 40
+                    }}>
+                        <div className="glass-card" style={{ padding: 8, backdropFilter: 'blur(20px)', background: 'rgba(10, 12, 20, 0.65)', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', borderRadius: 20 }}>
+                            <form
+                                style={{ display: 'flex', gap: 12, alignItems: 'center' }}
+                                onSubmit={(e) => {
                                     e.preventDefault();
                                     handleSend(input);
-                                }
-                            }}
-                            placeholder={hasMessages ? "Ask follow-up..." : "Describe your ideal candidate..."}
-                            rows={1}
-                        />
-                        <button
-                            className="btn primary"
-                            type="submit"
-                            aria-label="Send query"
-                            disabled={isThinking || !input.trim()}
-                            style={{ width: 40, height: 40, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12, flexShrink: 0, opacity: input.trim() ? 1 : 0.5 }}
-                        >
-                            <span style={{ fontSize: '1.2rem', marginTop: -2 }}>↑</span>
-                        </button>
-                    </form>
-                </div>
+                                }}
+                            >
+                                <textarea
+                                    className="textarea"
+                                    style={{
+                                        flex: 1,
+                                        minHeight: 48,
+                                        maxHeight: 120,
+                                        background: 'transparent',
+                                        border: 'none',
+                                        resize: 'none',
+                                        padding: '12px 16px',
+                                        fontSize: '1rem',
+                                        color: 'var(--text)'
+                                    }}
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey && !isThinking) {
+                                            e.preventDefault();
+                                            handleSend(input);
+                                        }
+                                    }}
+                                    placeholder={hasMessages ? "Ask follow-up..." : "Describe your ideal candidate..."}
+                                    rows={1}
+                                />
+                                <button
+                                    className="btn primary"
+                                    type="submit"
+                                    aria-label="Send query"
+                                    disabled={isThinking || !input.trim()}
+                                    style={{ width: 40, height: 40, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12, flexShrink: 0, opacity: input.trim() ? 1 : 0.5 }}
+                                >
+                                    <span style={{ fontSize: '1.2rem', marginTop: -2 }}>↑</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </main>
             </div>
         </div>
     );
