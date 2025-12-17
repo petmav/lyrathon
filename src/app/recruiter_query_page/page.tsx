@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { JSX } from "react/jsx-runtime";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 
 const THINKING_PHRASES = [
     "Thinking...",
@@ -57,6 +58,14 @@ function id() {
 }
 
 export default function RecruiterQueryPage(): JSX.Element {
+    const router = useRouter();
+
+    const handleLogout = (): void => {
+        router.push('/');
+        localStorage.removeItem("recruiter_id");
+        console.log("Logged out");
+    };
+
     const [input, setInput] = useState("");
     const [isThinking, setIsThinking] = useState(false);
     const [thinkingElapsedMs, setThinkingElapsedMs] = useState(0);
@@ -76,6 +85,10 @@ export default function RecruiterQueryPage(): JSX.Element {
         },
     ]);
 
+    const [conversations, setConversations] = useState([]);
+    console.log(conversations);
+    const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+
     const listRef = useRef<HTMLDivElement | null>(null);
 
     const quickPrompts = useMemo(
@@ -86,6 +99,29 @@ export default function RecruiterQueryPage(): JSX.Element {
         ],
         []
     );
+
+    useEffect(() => {
+        const fetchConversations = async () => {
+            try {
+                const recruiterId = localStorage.getItem("recruiter_id");
+                if (!recruiterId) {
+                    throw new Error("Recruiter ID not found in local storage.");
+                }
+
+                const res = await fetch(`/api/query/history?recruiter_id=${recruiterId}`);
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch conversations: ${res.status}`);
+                }
+
+                const conversations = await res.json();
+                setConversations([...conversations, {title: 'New Conversation', conversation_id: null}]);
+            } catch (error) {
+                console.error("Error fetching conversation history:", error);
+            }
+        };
+
+        fetchConversations();
+    }, []);
 
     useEffect(() => {
         const timers: number[] = [];
@@ -204,7 +240,80 @@ export default function RecruiterQueryPage(): JSX.Element {
         setTimeline((items) => [...items, { kind: "message", msg: message }]);
     }
 
-    async function handleSend(text: string) {
+    const fetchConversation = async (conversationId: string) => {
+        if (conversationId === null) {
+            setTimeline([
+                {
+                    kind: "message",
+                    msg: {
+                        id: id(),
+                        role: "assistant",
+                        ts: Date.now(),
+                        text:
+                            "Describe the employee you’re looking for (role, location, skills, years). Example: “frontend engineer, Sydney, React + TypeScript, 2+ years”.",
+                    },
+                },
+            ]);
+            return;
+        }
+        try {
+            const res = await fetch(`/api/query/conversation?conversation_id=${conversationId}`);
+            if (!res.ok) {
+                throw new Error(`Failed to fetch conversation: ${res.status}`);
+            }
+
+            const data = await res.json();
+            console.log(data);
+            const formattedTimeline = data.map((item: any) => {
+                if (item.is_assistant) {
+                    try {
+                        const parsed = JSON.parse(item.query_text);
+                        if (parsed?.shortlist && Array.isArray(parsed.shortlist)) {
+                            return [
+                                {
+                                    kind: "shortlist",
+                                    id: item.query_id,
+                                    data: {
+                                        filters: parsed.filters || {},
+                                        shortlist: parsed.shortlist,
+                                        overall_summary: parsed.overall_summary || "",
+                                    },
+                                },
+                                {
+                                    kind: "message",
+                                    msg: {
+                                        id: `${item.query_id}-summary`,
+                                        role: "assistant",
+                                        text: parsed.overall_summary || "",
+                                        ts: new Date(item.created_at).getTime(),
+                                    },
+                                },
+                            ];
+                        }
+                    } catch (error) {
+                        console.error("Failed to parse assistant query text as JSON:", error);
+                    }
+                }
+
+                return {
+                    kind: "message",
+                    msg: {
+                        id: item.query_id,
+                        role: item.is_assistant ? "assistant" : "recruiter",
+                        text: item.query_text,
+                        ts: new Date(item.created_at).getTime(),
+                    },
+                };
+            }).flat();
+
+            setTimeline(formattedTimeline);
+            setCurrentConversationId(conversationId);
+        } catch (error) {
+            console.error("Error fetching conversation:", error);
+        }
+    };
+
+    const handleSend = async (text: string) => {
         if (isThinking) return;
         const trimmed = text.trim();
         if (!trimmed) return;
@@ -215,18 +324,39 @@ export default function RecruiterQueryPage(): JSX.Element {
         scrollToBottom();
 
         try {
-            const res = await fetch("/api/query/shortlist", {
+            const recruiterId = localStorage.getItem("recruiter_id");
+            if (!recruiterId) {
+                throw new Error("Recruiter ID not found in local storage.");
+            }
+
+            const res = await fetch(`/api/query/shortlist`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query: trimmed, limit: 5 }),
+                body: JSON.stringify({
+                    query: trimmed,
+                    limit: 5,
+                    recruiter_id: recruiterId,
+                    conversation_id: currentConversationId || null,
+                }),
             });
 
             if (!res.ok) {
                 throw new Error(`Request failed: ${res.status}`);
             }
-            const replyText = await res.text();
+
+            const { conversation_id, conversation_title, responseBody } = await res.json();
+
+            // Update the current conversation ID if it was not set
+            if (!currentConversationId) {
+                setCurrentConversationId(conversation_id);
+                setConversations((prev) => [
+                    { conversation_id: conversation_id, title: conversation_title },
+                    ...prev,
+                ]);
+            }
+
             try {
-                const parsed = JSON.parse(replyText);
+                const parsed = responseBody;
                 if (parsed?.shortlist && Array.isArray(parsed.shortlist)) {
                     const typed = parsed as ShortlistResult;
                     setTimeline((items) => [
@@ -243,10 +373,10 @@ export default function RecruiterQueryPage(): JSX.Element {
                         },
                     ]);
                 } else {
-                    addMessage("assistant", replyText);
+                    addMessage("assistant", JSON.stringify(responseBody));
                 }
             } catch {
-                addMessage("assistant", replyText);
+                addMessage("assistant", JSON.stringify(responseBody));
             }
             scrollToBottom();
         } catch (error) {
@@ -258,7 +388,7 @@ export default function RecruiterQueryPage(): JSX.Element {
         } finally {
             setIsThinking(false);
         }
-    }
+    };
 
     return (
         <div className="page" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -273,9 +403,34 @@ export default function RecruiterQueryPage(): JSX.Element {
                         ← Back to home
                     </Link>
                 </div>
+                {/* Logout positioned to the far-right edge of the header */}
+                <div className='logoutWrap'>
+                    <button onClick={handleLogout} style={{ color: 'white', background: 'none', border: 'none', cursor: 'pointer' }}>
+                        Logout
+                    </button>
+                </div>
             </header>
 
             <main className="page-main" style={{ flex: 1, paddingBottom: 100, overflow: 'hidden' }}>
+                <div>
+                    <h2>Conversations</h2>
+                    <ul>
+                        {conversations.map((conversation) => (
+                            <li key={conversation.conversation_id ?? 'new'}>
+                                <button
+                                    onClick={() => fetchConversation(conversation.conversation_id)}
+                                    className={
+                                        currentConversationId === conversation.conversation_id
+                                            ? "activeConversation"
+                                            : ""
+                                    }
+                                >
+                                    {conversation.title}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
                 <div className="container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
 
                     <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>

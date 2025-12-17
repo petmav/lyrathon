@@ -36,8 +36,21 @@ export default function RecruiterRegisterPage() {
 
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // On success, redirect to login
+      const res = await fetch("/api/register/recruiter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      console.log(res)
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error ?? "Registration failed");
+        setLoading(false);
+        return;
+      }
+      localStorage.setItem("recruiter_id", data.recruiter_id);
       router.push("/recruiter_query_page");
     } catch (err) {
       setError("Network error");
@@ -175,7 +188,7 @@ export default function RecruiterRegisterPage() {
             </form>
 
             <p style={{ textAlign: 'center', marginTop: 24, fontSize: '0.9rem', color: 'var(--muted)' }}>
-              Already registered? <Link href="/login" style={{ color: '#9a6bff', fontWeight: 700 }}>Sign in</Link>
+              Already registered? <Link href="/login/recruiter" style={{ color: '#9a6bff', fontWeight: 700 }}>Sign in</Link>
             </p>
           </div>
 
