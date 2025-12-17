@@ -1,31 +1,34 @@
 "use client"
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiCall } from "@/lib/utils";
 
-const highlights = [
-  {
-    title: "Unified access",
-    body: "One sign-in for profile updates, queries, and shortlist tracking.",
-  },
-  {
-    title: "Secure by design",
-    body: "PII is encrypted at rest; revoke data with a single click.",
-  },
-  {
-    title: "Fast visibility",
-    body: "Updated profiles are instantly searchable in SQL + vector space.",
-  },
-];
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [heroSeen, setHeroSeen] = useState(false);
   const router = useRouter();
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setHeroSeen(true);
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (heroRef.current) observer.observe(heroRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -49,65 +52,57 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="no-scroll-app">
-      <div className="viewport-container" style={{
-        display: 'grid',
-        placeItems: 'center',
-        background: 'radial-gradient(circle at 50% 10%, rgba(25, 30, 60, 0.4) 0%, rgba(5, 8, 20, 1) 100%)'
-      }}>
+    <div className="page">
+      <header className="site-header">
+        <div className="container header-row">
+          <div className="brand">
+            <Link href="/" aria-label="Linkdr homepage">
+              <span className="brand-mark">L</span>
+              <span className="brand-text">Linkdr</span>
+            </Link>
+          </div>
+          <nav className="nav">
+            <Link className="nav-link" href="/register">Sign up</Link>
+          </nav>
+        </div>
+      </header>
 
-        <div style={{
-          width: 'min(1100px, 100%)',
-          display: 'grid',
-          gridTemplateColumns: '1.1fr 0.9fr',
-          gap: 40,
-          padding: 24
-        }}>
+      <main className="panel" style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <div ref={heroRef} className="container" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "center" }}>
 
-          {/* Left Column: Info */}
-          <div className="glass-card" style={{ padding: 40, display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Link href="/" style={{ textDecoration: 'none' }}>
-                <div style={{
-                  width: 42, height: 42, borderRadius: 8,
-                  background: 'linear-gradient(135deg, #9a6bff 0%, #4fd1c5 100%)',
-                  display: 'grid', placeItems: 'center',
-                  fontWeight: 900, color: '#050712'
-                }}>L</div>
-              </Link>
-              <div>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Linkdr</h2>
-                <p className="muted">Secure sign-in</p>
-              </div>
-            </div>
+          {/* Left Column: Hero Content */}
+          <div className="hero-content" style={{ padding: 0 }}>
+            <p className={`eyebrow reveal ${heroSeen ? "show reveal-delay-0" : ""}`}>Welcome back</p>
+            <h1 className={`hero-title reveal ${heroSeen ? "show reveal-delay-1" : ""}`}>
+              Jump back into <br /> your profile.
+            </h1>
+            <p className={`hero-subtitle reveal ${heroSeen ? "show reveal-delay-2" : ""}`}>
+              Continue building your profile, informing recruiters and keeping your profile synced across the stack.
+            </p>
 
-            <div>
-              <h1 className="hero-title" style={{ fontSize: '2.5rem', lineHeight: 1.1 }}>
-                Jump back into your pipeline.
-              </h1>
-              <p className="hero-subtitle" style={{ marginTop: 16 }}>
-                Continue tracking recruiter queries, shortlist decisions, and keep your profile synced across the stack.
-              </p>
-            </div>
-
-            <div style={{ display: 'grid', gap: 12, marginTop: 'auto' }}>
-              {highlights.map((item) => (
-                <div key={item.title} style={{
-                  padding: 16, borderRadius: 8,
-                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)'
+            {/* Simple visual element instead of KPIs for login to vary it slightly */}
+            <div className={`reveal ${heroSeen ? "show reveal-delay-3" : ""}`} style={{ marginTop: 40, display: 'flex', gap: 16 }}>
+              {['Unified access', 'Secure by design', 'Fast visibility'].map(tag => (
+                <span key={tag} style={{
+                  padding: '8px 16px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 999,
+                  fontSize: '0.9rem',
+                  color: 'var(--muted)',
+                  fontWeight: 500
                 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>{item.title}</div>
-                  <div className="muted" style={{ fontSize: '0.9rem' }}>{item.body}</div>
-                </div>
+                  {tag}
+                </span>
               ))}
             </div>
           </div>
 
           {/* Right Column: Form */}
-          <div className="glass-card" style={{ padding: 40 }}>
+          <div className={`glass-card reveal ${heroSeen ? "show reveal-delay-2" : ""}`} style={{ padding: 40, width: '100%', maxWidth: 480, margin: '0 auto' }}>
             <div style={{ marginBottom: 32 }}>
-              <p className="eyebrow" style={{ color: '#9a6bff' }}>Welcome back</p>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Sign in to Linkdr</h2>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 700, margin: 0 }}>Sign in to Linkdr</h2>
+              <p className="muted">Enter your details to proceed.</p>
             </div>
 
             {error && (
@@ -122,7 +117,7 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: 8, color: 'var(--muted)' }}>Email</label>
+                <label className="input-label" style={{ marginBottom: 8, display: 'block', fontSize: '0.9rem', color: 'var(--muted)' }}>Email</label>
                 <input
                   type="email"
                   className="textarea"
@@ -134,7 +129,10 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: 8, color: 'var(--muted)' }}>Password</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <label className="input-label" style={{ fontSize: '0.9rem', color: 'var(--muted)' }}>Password</label>
+                  <Link href="#" style={{ fontSize: '0.85rem', color: 'var(--accent-2)', textDecoration: 'none' }}>Forgot password?</Link>
+                </div>
                 <input
                   type="password"
                   className="textarea"
@@ -156,12 +154,7 @@ export default function LoginPage() {
           </div>
 
         </div>
-
-        <div style={{ position: 'absolute', bottom: 24, right: 24, display: 'flex', gap: 24, fontSize: '0.85rem' }}>
-          <Link href="/" className="muted">Landing</Link>
-          <Link href="/privacy" className="muted">Privacy</Link>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
