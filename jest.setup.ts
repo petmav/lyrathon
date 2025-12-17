@@ -1,2 +1,6 @@
-process.env.DATABASE_URL =
-  process.env.DATABASE_URL ?? 'postgresql://test:test@localhost:5432/test';
+import '@testing-library/jest-dom';
+
+// Fill missing text encoder/decoder for likely JSDOM environment
+import { TextEncoder, TextDecoder } from 'util';
+
+Object.assign(global, { TextDecoder, TextEncoder });

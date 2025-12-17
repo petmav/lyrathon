@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
 function mockOpenAIResponse(outputText: string | null, reject = false) {
@@ -5,18 +8,18 @@ function mockOpenAIResponse(outputText: string | null, reject = false) {
     create: reject
       ? jest.fn().mockRejectedValue(new Error('LLM failure'))
       : jest.fn().mockResolvedValue({
-          output: outputText === null ? [] : [
-            {
-              type: 'message',
-              content: [
-                {
-                  type: 'output_text',
-                  text: outputText,
-                },
-              ],
-            },
-          ],
-        }),
+        output: outputText === null ? [] : [
+          {
+            type: 'message',
+            content: [
+              {
+                type: 'output_text',
+                text: outputText,
+              },
+            ],
+          },
+        ],
+      }),
   };
 
   const mockClient = {
@@ -37,10 +40,13 @@ describe('extractFiltersFromQuery', () => {
   beforeEach(() => {
     delete process.env.OPENAI_API_KEY;
     jest.resetModules();
+    jest.spyOn(console, 'warn').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => { });
   });
 
   afterEach(() => {
     process.env.OPENAI_API_KEY = originalKey;
+    jest.restoreAllMocks();
   });
 
   it('falls back to keyword-only filters when OPENAI_API_KEY is missing', async () => {

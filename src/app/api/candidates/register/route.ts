@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 import {
   saveCandidate,
   refreshCandidateEmbedding,
   type CandidateInput,
 } from '@/lib/candidate-ingest';
 import {
-  candidateInputSchema,
+  candidateProfileSchema,
   candidateRegistrationResponseSchema,
+  type CandidateProfilePayload,
 } from '@/lib/schemas';
 import {
   enforceResponseShape,
@@ -14,16 +16,47 @@ import {
   isResponseValidationError,
   parseRequestPayload,
 } from '@/lib/validation';
+import { logEvent } from '@/lib/logger';
+import {
+  ensureVerificationRunsForCandidate,
+} from '@/lib/verification';
 
 export async function POST(request: Request) {
   try {
-    const payload = parseRequestPayload(
-      candidateInputSchema,
+    const payload = parseRequestPayload<CandidateProfilePayload>(
+      candidateProfileSchema,
       await request.json(),
-    ) as CandidateInput;
+    );
 
-    const candidate = await saveCandidate(payload);
+    let password_hash = payload.password_hash;
+    if (!password_hash) {
+      const existingCandidate = await db.query<{ password_hash: string }>(
+        `SELECT password_hash FROM candidate WHERE email = $1`,
+        [payload.email],
+      );
+
+      if (!existingCandidate.rowCount) {
+        return NextResponse.json(
+          { error: 'Candidate not found. Please register before updating.' },
+          { status: 404 },
+        );
+      }
+
+      password_hash = existingCandidate.rows[0].password_hash;
+    }
+
+    const candidateInput: CandidateInput = {
+      ...payload,
+      password_hash,
+    };
+
+    const candidate = await saveCandidate(candidateInput);
     let embeddingUpdated = false;
+
+    await logEvent('info', 'candidate.register.received', {
+      candidateId: candidate.candidate_id,
+      email: candidate.email,
+    });
 
     try {
       const updateResult = await refreshCandidateEmbedding(candidate.candidate_id);
@@ -32,7 +65,12 @@ export async function POST(request: Request) {
       console.error('Embedding refresh failed', embeddingError);
     }
 
-    const { password_hash, ...safeCandidate } = candidate as typeof candidate & {
+    // Queue verification runs for available evidence; final aggregate waits until all aspects present
+    ensureVerificationRunsForCandidate(candidate.candidate_id).catch((err) =>
+      console.error('Failed to queue verification', err),
+    );
+
+    const { password_hash: _pw, ...safeCandidate } = candidate as typeof candidate & {
       password_hash?: string;
     };
 
@@ -47,6 +85,11 @@ export async function POST(request: Request) {
         embeddingUpdated,
       },
     );
+
+    await logEvent('info', 'candidate.register.success', {
+      candidateId: candidate.candidate_id,
+      embeddingUpdated,
+    });
 
     return NextResponse.json(responseBody, { status: 201 });
   } catch (error) {
@@ -66,6 +109,9 @@ export async function POST(request: Request) {
     }
 
     console.error('Candidate registration failed', error);
+    await logEvent('error', 'candidate.register.error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { error: 'Failed to create candidate' },
       { status: 500 },
