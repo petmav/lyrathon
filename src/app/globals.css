@@ -469,7 +469,7 @@ a {
   background: rgba(7, 10, 22, 0.78);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
-  padding: 16px 0;
+  border-top: 1px solid var(--border);
   opacity: 0;
   transform: translateY(12px);
   pointer-events: none;
@@ -796,10 +796,65 @@ a {
 }
 
 .chat-bubble.bot {
-  align-self: flex-start;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.08);
+  /* Slightly lighter for bot */
   border-top-left-radius: 4px;
+}
+
+.chat-bubble.user {
+  background: var(--accent);
+  color: #050712;
+  border-top-right-radius: 4px;
+}
+
+.chat-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.chat-row.user {
+  flex-direction: row-reverse;
+}
+
+.chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.chat-avatar.bot {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #050712;
+}
+
+.chat-avatar.user {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.compact-auth-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 40px;
+  width: min(900px, 100%);
+  align-items: flex-start;
+  /* Prevents equal height stretching */
+}
+
+/* Ensure glass cards inside allow self-sizing */
+.compact-auth-container .glass-card {
+  flex: 1;
+  min-width: 300px;
 }
 
 

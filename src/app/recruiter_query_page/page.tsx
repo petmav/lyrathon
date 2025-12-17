@@ -260,14 +260,17 @@ export default function RecruiterQueryPage(): JSX.Element {
         }
     }
 
+    const hasMessages = timeline.length > 1;
+
     return (
         <div className="page" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
             <header className="site-header">
                 <div className="container header-row">
-                    <div className="brand">
+                    <div className="brand" style={{ gap: 0, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
                         <span className="brand-mark">L</span>
-                        <span className="brand-text">Linkdr</span>
-                        <p className="eyebrow" style={{ marginLeft: 12, marginBottom: 0 }}>Recruiter Console</p>
+                        <span className="brand-text" style={{ marginLeft: 24 }}>Linkdr</span>
+                        <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 24px' }} />
+                        <p className="eyebrow" style={{ margin: 0, fontSize: '0.85rem', letterSpacing: '0.05em', color: 'var(--muted)' }}>RECRUITER CONSOLE</p>
                     </div>
                     <Link className="btn ghost" href="/">
                         ← Back to home
@@ -275,79 +278,124 @@ export default function RecruiterQueryPage(): JSX.Element {
                 </div>
             </header>
 
-            <main className="page-main" style={{ flex: 1, paddingBottom: 100, overflow: 'hidden' }}>
-                <div className="container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <main className="page-main" style={{ flex: 1, paddingBottom: 120, paddingTop: 90 }}>
+                <div className="container" style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
-                    <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
-                        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-                            <p className="muted" style={{ margin: 0 }}>Describe the role, skills, location, visa, and salary constraints.</p>
-                            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                                {quickPrompts.map(p => (
+                    {/* Hero Empty State */}
+                    {!hasMessages && (
+                        <div className={`hero-content reveal ${!hasMessages ? "show reveal-delay-0" : ""}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', paddingBottom: 100 }}>
+                            <p className="eyebrow">AI Recruiter</p>
+                            <h1 className="hero-title" style={{ maxWidth: 800 }}>
+                                Who are you hiring today?
+                            </h1>
+                            <p className="hero-subtitle" style={{ maxWidth: 600, margin: '20px auto 40px' }}>
+                                Describe the ideal candidate using natural language. I&apos;ll handle the boolean logic, vector matching, and salary negotiation checks.
+                            </p>
+
+                            <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', width: '100%', maxWidth: 900 }}>
+                                {quickPrompts.map((p, i) => (
                                     <button
                                         key={p}
-                                        className="tag"
+                                        className="glass-card btn-reset"
                                         onClick={() => handleSend(p)}
                                         disabled={isThinking}
-                                        style={{ cursor: isThinking ? 'default' : 'pointer', background: 'rgba(255,255,255,0.05)' }}
+                                        style={{
+                                            textAlign: 'left',
+                                            padding: 24,
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s, background 0.2s',
+                                            background: 'rgba(255,255,255,0.03)'
+                                        }}
+                                        onMouseEnter={e => {
+                                            e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                                            e.currentTarget.style.transform = 'translateY(-2px)';
+                                        }}
+                                        onMouseLeave={e => {
+                                            e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                                            e.currentTarget.style.transform = 'translateY(0)';
+                                        }}
                                     >
-                                        {p}
+                                        <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Example {i + 1}</div>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--muted)', lineHeight: 1.4 }}>{p}</div>
                                     </button>
                                 ))}
                             </div>
                         </div>
+                    )}
 
-                        <div ref={listRef} className="chat-window" style={{ flex: 1, border: 'none', borderRadius: 0 }}>
-                            {timeline.map((item) => {
+                    {/* Chat Interface */}
+                    {hasMessages && (
+                        <div ref={listRef} className="chat-window" style={{ border: 'none', background: 'transparent', height: 'auto', overflow: 'visible' }}>
+                            {timeline.slice(1).map((item) => { // Skip the initial prompt message in chat view
                                 if (item.kind === "message") {
                                     const m = item.msg;
+                                    const isUser = m.role === "recruiter";
                                     return (
-                                        <div
-                                            key={m.id}
-                                            className={`chat-bubble ${m.role === "recruiter" ? 'user' : 'bot'}`}
-                                        >
-                                            {m.role === "assistant" ? (
-                                                <div style={{ whiteSpace: 'pre-wrap' }}>{typedText[m.id] ?? ""}</div>
-                                            ) : (
-                                                <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
+                                        <div key={m.id} className={`chat-row reveal show ${isUser ? 'user' : 'bot'}`} style={{ display: 'flex', flexDirection: 'row', gap: 16, marginBottom: 24, justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+                                            {!isUser && (
+                                                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, var(--accent), var(--accent-2))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 900, flexShrink: 0, boxShadow: 'var(--shadow)' }}>L</div>
+                                            )}
+
+                                            <div className="chat-bubble"
+                                                style={{
+                                                    background: isUser ? 'linear-gradient(135deg, var(--accent), var(--accent-2))' : 'rgba(255,255,255,0.05)',
+                                                    color: isUser ? '#050712' : 'var(--text)',
+                                                    border: isUser ? 'none' : '1px solid var(--border)',
+                                                    backdropFilter: 'blur(12px)',
+                                                    borderRadius: 24,
+                                                    padding: '16px 24px',
+                                                    maxWidth: '80%',
+                                                    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                                                    order: isUser ? 1 : 2
+                                                }}
+                                            >
+                                                {m.role === "assistant" ? (
+                                                    <div style={{ whiteSpace: 'pre-wrap' }}>{typedText[m.id] ?? m.text}</div>
+                                                ) : (
+                                                    <div style={{ whiteSpace: 'pre-wrap', fontWeight: 500 }}>{m.text}</div>
+                                                )}
+                                            </div>
+
+                                            {isUser && (
+                                                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text)', flexShrink: 0, order: 2 }}>R</div>
                                             )}
                                         </div>
                                     );
                                 }
 
                                 return (
-                                    <div key={item.id} style={{ width: '100%', padding: '0 20px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Shortlist candidates</h2>
-                                            <p className="muted" style={{ margin: 0 }}>
-                                                {item.data.shortlist.length} match{item.data.shortlist.length === 1 ? "" : "es"}
-                                            </p>
+                                    <div key={item.id} className="reveal show" style={{ width: '100%', padding: '20px 0 40px', maxWidth: 1000, margin: '0 auto' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                            <h2 className="section-title" style={{ fontSize: '1.5rem' }}>Shortlist Candidates</h2>
+                                            <span className="badge">{item.data.shortlist.length} matches</span>
                                         </div>
-                                        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+                                        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
                                             {item.data.shortlist.map((c, idx) => (
-                                                <div key={c.candidate_id} className="glass-card" style={{ padding: 16, background: 'rgba(255,255,255,0.03)' }}>
+                                                <div key={c.candidate_id} className="glass-card" style={{ padding: 20, transition: 'transform 0.2s', cursor: 'pointer' }}
+                                                    onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
+                                                    onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                                                >
                                                     <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                                                         <div>
-                                                            <h3 style={{ margin: '0 0 4px', fontSize: '1.1rem' }}>{c.name}</h3>
+                                                            <h3 style={{ margin: '0 0 4px', fontSize: '1.2rem' }}>{c.name}</h3>
                                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                                                {c.location && <span className="tag" style={{ fontSize: '0.75rem' }}>{c.location}</span>}
-                                                                {c.visa_status && <span className="tag" style={{ fontSize: '0.75rem' }}>{c.visa_status}</span>}
-                                                                {c.experience_years !== null && <span className="tag" style={{ fontSize: '0.75rem' }}>{c.experience_years}y exp</span>}
+                                                                {c.location && <span className="tag">{c.location}</span>}
+                                                                {c.experience_years !== null && <span className="tag">{c.experience_years}y exp</span>}
                                                             </div>
                                                         </div>
                                                         <div style={{ textAlign: 'right' }}>
                                                             <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Match</div>
-                                                            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)' }}>
+                                                            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent)' }}>
                                                                 {(c.confidence * 100).toFixed(0)}%
                                                             </div>
                                                         </div>
                                                     </header>
-                                                    <div style={{ fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-                                                        <p style={{ margin: '0 0 8px' }}>{c.match_summary}</p>
-                                                        <p style={{ margin: 0 }}><strong>Suggestion:</strong> {c.recommended_action}</p>
+                                                    <div style={{ fontSize: '0.95rem', lineHeight: 1.6, color: 'var(--muted)', marginBottom: 16 }}>
+                                                        {c.match_summary}
                                                     </div>
-                                                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                                                        <a href={`mailto:${c.email}`} style={{ color: 'var(--accent)' }}>{c.email}</a>
-                                                        {c.salary_expectation && <span>${c.salary_expectation.toLocaleString()} /yr</span>}
+                                                    <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                                                        <span style={{ color: 'var(--text)' }}>{c.recommended_action}</span>
+                                                        <button className="btn text" style={{ padding: 0 }}>View Profile →</button>
                                                     </div>
                                                 </div>
                                             ))}
@@ -355,33 +403,54 @@ export default function RecruiterQueryPage(): JSX.Element {
                                     </div>
                                 );
                             })}
+                            {/* Thinking State */}
                             {isThinking && (
-                                <div className="chat-bubble bot">
-                                    <div style={{ fontStyle: 'italic', color: 'var(--muted)' }}>
-                                        {thinkingDisplay || THINKING_PHRASES[thinkingPhraseIdx]}
-                                    </div>
-                                    <div style={{ fontSize: '0.75rem', marginTop: 4, color: 'var(--muted)' }}>
-                                        {(thinkingElapsedMs / 1000).toFixed(2)}s
+                                <div className="chat-row reveal show bot" style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+                                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, var(--accent), var(--accent-2))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 900, flexShrink: 0, boxShadow: 'var(--shadow)' }}>L</div>
+                                    <div className="chat-bubble" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 24, padding: '16px 24px', border: '1px solid var(--border)', backdropFilter: 'blur(12px)' }}>
+                                        <div style={{ fontStyle: 'italic', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span>{thinkingDisplay || THINKING_PHRASES[thinkingPhraseIdx]}</span>
+                                            <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{(thinkingElapsedMs / 1000).toFixed(1)}s</span>
+                                        </div>
                                     </div>
                                 </div>
                             )}
+                            <div style={{ height: 100 }} />
                         </div>
-                    </div>
+                    )}
                 </div>
             </main>
 
-            <div style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', padding: 20, pointerEvents: 'none' }}>
-                <div className="container" style={{ pointerEvents: 'auto' }}>
+            {/* Floating Input Capsule */}
+            <div style={{
+                position: 'fixed',
+                bottom: 32,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 'min(720px, 90vw)',
+                zIndex: 40
+            }}>
+                <div className="glass-card" style={{ padding: 8, backdropFilter: 'blur(20px)', background: 'rgba(10, 12, 20, 0.65)', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', borderRadius: 20 }}>
                     <form
-                        style={{ display: 'flex', gap: 12, background: '#0a0c10', padding: 12, borderRadius: 16, border: '1px solid var(--border)', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)' }}
+                        style={{ display: 'flex', gap: 12, alignItems: 'center' }}
                         onSubmit={(e) => {
                             e.preventDefault();
                             handleSend(input);
                         }}
                     >
                         <textarea
-                            className="textarea" // Using global textarea class but overriding structure
-                            style={{ flex: 1, minHeight: 48, maxHeight: 120, background: 'transparent', border: 'none', resize: 'none', padding: '10px 0 0' }}
+                            className="textarea"
+                            style={{
+                                flex: 1,
+                                minHeight: 48,
+                                maxHeight: 120,
+                                background: 'transparent',
+                                border: 'none',
+                                resize: 'none',
+                                padding: '12px 16px',
+                                fontSize: '1rem',
+                                color: 'var(--text)'
+                            }}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -390,17 +459,17 @@ export default function RecruiterQueryPage(): JSX.Element {
                                     handleSend(input);
                                 }
                             }}
-                            placeholder='Try: "backend engineer, Sydney, Node, Postgres, AWS, 3+ years"'
+                            placeholder={hasMessages ? "Ask follow-up..." : "Describe your ideal candidate..."}
                             rows={1}
                         />
                         <button
                             className="btn primary"
                             type="submit"
                             aria-label="Send query"
-                            disabled={isThinking}
-                            style={{ width: 48, height: 48, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12 }}
+                            disabled={isThinking || !input.trim()}
+                            style={{ width: 40, height: 40, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12, flexShrink: 0, opacity: input.trim() ? 1 : 0.5 }}
                         >
-                            {isThinking ? "..." : "→"}
+                            <span style={{ fontSize: '1.2rem', marginTop: -2 }}>↑</span>
                         </button>
                     </form>
                 </div>
