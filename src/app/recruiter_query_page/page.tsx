@@ -84,9 +84,9 @@ export default function RecruiterQueryPage(): JSX.Element {
             },
         },
     ]);
-    console.log('timeline', timeline);
 
     const [conversations, setConversations] = useState([]);
+    console.log(conversations);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
     const listRef = useRef<HTMLDivElement | null>(null);
@@ -114,7 +114,7 @@ export default function RecruiterQueryPage(): JSX.Element {
                 }
 
                 const conversations = await res.json();
-                setConversations(conversations);
+                setConversations([...conversations, {title: 'New Conversation', conversation_id: null}]);
             } catch (error) {
                 console.error("Error fetching conversation history:", error);
             }
@@ -241,6 +241,21 @@ export default function RecruiterQueryPage(): JSX.Element {
     }
 
     const fetchConversation = async (conversationId: string) => {
+        if (conversationId === null) {
+            setTimeline([
+                {
+                    kind: "message",
+                    msg: {
+                        id: id(),
+                        role: "assistant",
+                        ts: Date.now(),
+                        text:
+                            "Describe the employee you’re looking for (role, location, skills, years). Example: “frontend engineer, Sydney, React + TypeScript, 2+ years”.",
+                    },
+                },
+            ]);
+            return;
+        }
         try {
             const res = await fetch(`/api/query/conversation?conversation_id=${conversationId}`);
             if (!res.ok) {
@@ -335,8 +350,8 @@ export default function RecruiterQueryPage(): JSX.Element {
             if (!currentConversationId) {
                 setCurrentConversationId(conversation_id);
                 setConversations((prev) => [
-                    ...prev,
                     { conversation_id: conversation_id, title: conversation_title },
+                    ...prev,
                 ]);
             }
 
@@ -397,16 +412,16 @@ export default function RecruiterQueryPage(): JSX.Element {
             </header>
 
             <main className="page-main" style={{ flex: 1, paddingBottom: 100, overflow: 'hidden' }}>
-                <aside>
+                <div>
                     <h2>Conversations</h2>
                     <ul>
                         {conversations.map((conversation) => (
-                            <li key={conversation.conversation_id}>
+                            <li key={conversation.conversation_id ?? 'new'}>
                                 <button
                                     onClick={() => fetchConversation(conversation.conversation_id)}
                                     className={
                                         currentConversationId === conversation.conversation_id
-                                            ? styles.activeConversation
+                                            ? "activeConversation"
                                             : ""
                                     }
                                 >
@@ -415,7 +430,7 @@ export default function RecruiterQueryPage(): JSX.Element {
                             </li>
                         ))}
                     </ul>
-                </aside>
+                </div>
                 <div className="container" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
 
                     <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
