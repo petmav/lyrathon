@@ -602,9 +602,13 @@ export default function ApplicantFormPage(): JSX.Element {
                       <span style={{ color: 'var(--muted)' }}>Location</span>
                       <span style={{ fontWeight: 600, textAlign: 'right' }}>{location || '—'}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 12 }}>
                       <span style={{ color: 'var(--muted)' }}>Experience</span>
                       <span style={{ fontWeight: 600, textAlign: 'right' }}>{isEmployed ? `${experienceYears || 0} Years` : '—'}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--muted)' }}>Availability</span>
+                      <span style={{ fontWeight: 600, textAlign: 'right' }}>{availabilityDate ? new Date(availabilityDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Immediate'}</span>
                     </div>
                   </div>
                 </div>
@@ -870,8 +874,8 @@ export default function ApplicantFormPage(): JSX.Element {
                         <input className="input" value={visaStatus} onChange={e => setVisaStatus(e.target.value)} placeholder="e.g. Citizen, PR, 482 Visa" />
                       </div>
                       <div className="modal-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
-                        <div className="modal-label">Availability</div>
-                        <input className="input" value={availabilityDate} onChange={e => setAvailabilityDate(e.target.value)} placeholder="e.g. Immediate, 4 weeks" />
+                        <div className="modal-label">Availability Date</div>
+                        <input className="input" type="date" value={availabilityDate ? availabilityDate.split('T')[0] : ''} onChange={e => setAvailabilityDate(e.target.value)} />
                       </div>
                     </div>
                   </div>

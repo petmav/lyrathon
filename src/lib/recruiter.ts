@@ -1,4 +1,9 @@
 import { db } from '@/lib/db';
+import OpenAI from 'openai';
+
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 export async function saveRecruiter(
   input: {
@@ -74,6 +79,40 @@ export async function saveRecruiter(
   return result.rows[0];
 }
 
+export async function generateConversationTitle(queryText: string): Promise<string> {
+  if (!openai) return "New Conversation";
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant that summarizes recruiter queries into a short, concise title (max 5-6 words). Return ONLY the title, no quotes or other text."
+        },
+        {
+          role: "user",
+          content: queryText
+        }
+      ],
+      max_tokens: 20,
+    });
+
+    const title = response.choices[0]?.message?.content?.trim();
+    return title || "New Conversation";
+  } catch (error) {
+    console.error("Failed to generate conversation title:", error);
+    return "New Conversation";
+  }
+}
+
+export async function updateConversationTitle(conversationId: string, title: string) {
+  await db.query(
+    `UPDATE conversation SET title = $1 WHERE conversation_id = $2`,
+    [title, conversationId]
+  );
+}
+
 export async function saveRecruiterQuery(
   input: {
     conversation_id: string;
@@ -81,8 +120,8 @@ export async function saveRecruiterQuery(
     is_assistant: boolean;
   },
 ): Promise<any> {
-    const result = await db.query(
-        `
+  const result = await db.query(
+    `
         INSERT INTO recruiter_queries (
             conversation_id,
             query_text,
@@ -91,14 +130,29 @@ export async function saveRecruiterQuery(
             $1, $2, $3
         ) RETURNING *
         `,
-        [
-            input.conversation_id,
-            input.query_text,
-            input.is_assistant,
-        ],
+    [
+      input.conversation_id,
+      input.query_text,
+      input.is_assistant,
+    ],
+  );
+
+  // If this is the first user query, generate a title
+  if (!input.is_assistant) {
+    const queries = await db.query(
+      `SELECT count(*) as count FROM recruiter_queries WHERE conversation_id = $1`,
+      [input.conversation_id]
     );
 
-    return result.rows[0];
+    if (queries.rows[0].count == 1) {
+      // Run in background
+      generateConversationTitle(input.query_text).then(title => {
+        updateConversationTitle(input.conversation_id, title);
+      });
+    }
+  }
+
+  return result.rows[0];
 }
 
 export async function newConversation(recruiterId: string, title: string) {

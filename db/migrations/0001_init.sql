@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS candidate (
     education JSONB NOT NULL DEFAULT '[]'::JSONB,
     profile_created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     profile_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    verifiable_confidence_score NUMERIC(5,2) DEFAULT 0,
     CONSTRAINT candidate_age CHECK (age BETWEEN 16 AND 100),
     CONSTRAINT candidate_experience CHECK (experience_years IS NULL OR experience_years >= 0),
     CONSTRAINT candidate_salary CHECK (salary_expectation IS NULL OR salary_expectation >= 0)
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS recruiter (
 CREATE TABLE IF NOT EXISTS candidate_documents (
     document_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     candidate_id UUID NOT NULL REFERENCES candidate(candidate_id) ON DELETE CASCADE,
-    type TEXT NOT NULL CHECK (type IN ('resume', 'portfolio', 'cover_letter', 'other')),
+    type TEXT NOT NULL CHECK (type IN ('resume', 'portfolio', 'cover_letter', 'other', 'transcript')),
     file_url TEXT NOT NULL,
     checksum TEXT,
     is_primary BOOLEAN NOT NULL DEFAULT FALSE,
@@ -68,6 +69,19 @@ CREATE TABLE IF NOT EXISTS candidate_documents (
 CREATE UNIQUE INDEX IF NOT EXISTS candidate_documents_primary_idx
     ON candidate_documents (candidate_id)
     WHERE is_primary;
+
+-- Cache extracted document text to avoid repeated fetch/parse work
+CREATE TABLE IF NOT EXISTS candidate_document_cache (
+    document_id UUID PRIMARY KEY REFERENCES candidate_documents(document_id) ON DELETE CASCADE,
+    checksum TEXT NOT NULL,
+    text_content TEXT,
+    content_type TEXT,
+    bytes INTEGER,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS candidate_document_cache_checksum_idx
+  ON candidate_document_cache (checksum);
 
 -- Recruiter/company specific status tracking for candidates
 CREATE TABLE IF NOT EXISTS candidate_status (
@@ -118,3 +132,34 @@ CREATE TABLE IF NOT EXISTS recruiter_queries (
     conversation_id UUID REFERENCES conversation(conversation_id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Verification runs
+CREATE TABLE IF NOT EXISTS verification_runs (
+  verification_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  candidate_id UUID NOT NULL REFERENCES candidate(candidate_id) ON DELETE CASCADE,
+  run_type TEXT NOT NULL CHECK (run_type IN ('resume', 'transcript', 'project_links', 'full_profile')),
+  input_hash TEXT,
+  status TEXT NOT NULL CHECK (status IN ('queued', 'processing', 'succeeded', 'failed', 'skipped')),
+  confidence NUMERIC(4,3),
+  rationale TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  web_search_used BOOLEAN DEFAULT FALSE,
+  link_overlap_count INTEGER DEFAULT 0,
+  link_notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  started_at TIMESTAMPTZ,
+  finished_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS verification_runs_candidate_idx
+  ON verification_runs (candidate_id);
+
+CREATE INDEX IF NOT EXISTS verification_runs_status_created_idx
+  ON verification_runs (status, created_at);
+
+CREATE INDEX IF NOT EXISTS verification_runs_input_hash_idx
+  ON verification_runs (candidate_id, input_hash);
+
+CREATE INDEX IF NOT EXISTS verification_runs_run_type_idx
+  ON verification_runs (run_type, created_at);

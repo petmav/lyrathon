@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 import { extractFiltersFromQuery } from '@/lib/query-parser';
 import { searchCandidates } from '@/lib/candidate-search';
 import { generateEmbedding } from '@/lib/embeddings';
@@ -20,12 +21,12 @@ import { newConversation, saveRecruiterQuery } from '@/lib/recruiter';
 const conversation_title = "New Conversation";
 
 async function getConversationId(body: any): Promise<string> {
-    if (!body.conversation_id) {
-        const conversation = await newConversation(body.recruiter_id, conversation_title);
-        console.log(conversation);
-        return conversation.conversation_id;
-    }
-    return body.conversation_id;
+  if (!body.conversation_id) {
+    const conversation = await newConversation(body.recruiter_id, conversation_title);
+    console.log(conversation);
+    return conversation.conversation_id;
+  }
+  return body.conversation_id;
 }
 
 export async function POST(request: Request) {
@@ -69,9 +70,38 @@ export async function POST(request: Request) {
 
     const shortlist = await createShortlist(body.query, candidates, sanitizedFilters);
 
+    // Hydrate shortlist with verification scores
+    const hydratedShortlist = await Promise.all(
+      shortlist.shortlist.map(async (candidate) => {
+        const verifications = await db.query(
+          `SELECT run_type, confidence
+           FROM verification_runs
+           WHERE candidate_id = $1
+           ORDER BY finished_at DESC`,
+          [candidate.candidate_id],
+        );
+
+        const runs = verifications.rows;
+        const getScore = (type: string) => {
+          const run = runs.find((r: any) => r.run_type === type);
+          return run ? Number(run.confidence) : null;
+        };
+
+        return {
+          ...candidate,
+          verification_scores: {
+            resume: getScore('resume'),
+            projects: getScore('project_links'),
+            education: getScore('transcript'),
+          },
+        };
+      }),
+    );
+
     const responseBody = enforceResponseShape(shortlistResponseSchema, {
       filters: sanitizedFilters,
-      ...shortlist,
+      shortlist: hydratedShortlist,
+      overall_summary: shortlist.overall_summary,
     });
 
     await logEvent('info', 'recruiter.shortlist.success', {
@@ -79,7 +109,8 @@ export async function POST(request: Request) {
       duration_ms: Date.now() - started,
       shortlist_size: shortlist.shortlist.length,
     });
-    
+
+    // store responseBody in recruiter_queries table
     // store responseBody in recruiter_queries table
     saveRecruiterQuery({
       conversation_id: conversation_id,
@@ -87,7 +118,14 @@ export async function POST(request: Request) {
       is_assistant: true,
     });
 
-    return NextResponse.json({ conversation_id: conversation_id, conversation_title, responseBody });
+    // Fetch the latest title (it might have been updated by the background task)
+    const conversationRes = await db.query(
+      `SELECT title FROM conversation WHERE conversation_id = $1`,
+      [conversation_id]
+    );
+    const finalTitle = conversationRes.rows[0]?.title || conversation_title;
+
+    return NextResponse.json({ conversation_id: conversation_id, conversation_title: finalTitle, responseBody });
   } catch (error) {
     if (isRequestValidationError(error)) {
       return NextResponse.json(
