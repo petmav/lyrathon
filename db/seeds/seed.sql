@@ -30,7 +30,8 @@ INSERT INTO candidate (
   certifications_text,
   projects_text,
   previous_positions,
-  education
+  education,
+  verifiable_confidence_score
 ) VALUES
 (
   '33333333-3333-3333-3333-333333333333',
@@ -49,7 +50,8 @@ INSERT INTO candidate (
   'AWS Certified Developer',
   'Built Aurora Design System; Implemented realtime collaboration tools',
   '[{"title":"Frontend Engineer","org":"Vector Labs","start_date":"2019-01-01","end_date":"2022-05-01"}]',
-  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2017}]'
+  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2017}]',
+  0.87
 ),
 (
   '44444444-4444-4444-4444-444444444444',
@@ -68,7 +70,8 @@ INSERT INTO candidate (
   'Databricks Certified Data Engineer',
   'Lead propensity scoring platform; Built multilingual retrieval system',
   '[{"title":"Data Scientist","org":"Innova","start_date":"2016-03-01","end_date":"2020-08-01"}]',
-  '[{"degree":"MSc Applied Math","school":"UNAM","graduation_year":2015}]'
+  '[{"degree":"MSc Applied Math","school":"UNAM","graduation_year":2015}]',
+  0.0
 ),
 (
   '55555555-5555-5555-5555-555555555555',
@@ -87,7 +90,8 @@ INSERT INTO candidate (
   NULL,
   'Led redesign of telehealth intake; Created modular design token system',
   '[{"title":"UX Designer","org":"Wellnest","start_date":"2021-02-01","end_date":"2023-11-01"}]',
-  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2020}]'
+  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2020}]',
+  0.0
 )
 ON CONFLICT (candidate_id) DO NOTHING;
 
@@ -152,6 +156,9 @@ INSERT INTO verification_runs (
   confidence,
   rationale,
   metadata,
+  web_search_used,
+  link_overlap_count,
+  link_notes,
   created_at,
   updated_at,
   started_at,
@@ -166,6 +173,9 @@ INSERT INTO verification_runs (
     0.87,
     'Resume, education, and portfolio align; transcript matches claimed degree.',
     '{"sources":["resume","transcript","portfolio"]}',
+    TRUE,
+    3,
+    'Found matching LinkedIn and GitHub profiles.',
     now(),
     now(),
     now(),
@@ -173,6 +183,7 @@ INSERT INTO verification_runs (
   )
 ON CONFLICT (verification_id) DO NOTHING;
 
+-- Update candidate confidence score (redundant if inserted above, but keeps logic consistent)
 UPDATE candidate
 SET verifiable_confidence_score = 0.87
 WHERE candidate_id = '33333333-3333-3333-3333-333333333333';

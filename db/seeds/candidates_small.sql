@@ -15,7 +15,8 @@ INSERT INTO candidate (
   certifications_text,
   projects_text,
   previous_positions,
-  education
+  education,
+  verifiable_confidence_score
 ) VALUES
 (
   '753b511f-32c2-56a1-94d6-b6984a4d49eb',
@@ -34,7 +35,8 @@ INSERT INTO candidate (
   'Certified Senior Backend Engineer',
   'Led payments rewrite for 5M users; built event-driven notification service',
   '[{"title":"Backend Engineer","org":"Northwind Systems","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2012}]'
+  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2012}]',
+  0.0
 ),
 (
   '40273216-4461-5f49-bea8-df660a1bf668',
@@ -53,8 +55,7 @@ INSERT INTO candidate (
   NULL,
   'Scaled design system adoption across 8 squads; implemented SSR streaming UI',
   '[{"title":"Frontend Engineer","org":"Helios Labs","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2013}]'
-),
+  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2013}]', 0.0),
 (
   'fa76282a-1c83-5fa9-ba5a-54e0aa22fbd1',
   'Kai Nakamura',
@@ -72,8 +73,7 @@ INSERT INTO candidate (
   NULL,
   'Launched multilingual retrieval system; built realtime experimentation platform',
   '[{"title":"Data Scientist","org":"Nimbus AI","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2014}]'
-),
+  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2014}]', 0.0),
 (
   'b8b63cbf-0773-563d-a57a-c170362827c8',
   'Kai Okafor',
@@ -91,8 +91,7 @@ INSERT INTO candidate (
   'Certified Platform Engineer',
   'Designed multi-region Kubernetes platform; reduced infra spend 18%',
   '[{"title":"Site Reliability Engineer","org":"Cloudforge","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2015}]'
-),
+  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2015}]', 0.0),
 (
   '10628f51-f4ea-5667-93ef-7f7b10d10d60',
   'Kai Hernandez',
@@ -110,8 +109,7 @@ INSERT INTO candidate (
   NULL,
   'Migration to lakehouse architecture; built governance catalog',
   '[{"title":"Data Engineer","org":"Aurora Analytics","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2016}]'
-),
+  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2016}]', 0.0),
 (
   'fe212d00-40cc-5ef3-97e2-d268cbf139b3',
   'Kai Liu',
@@ -129,8 +127,7 @@ INSERT INTO candidate (
   NULL,
   'Implemented SDL program; automated dependency scanning for 400 repos',
   '[{"title":"Security Analyst","org":"ShieldWorks","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Cybersecurity","school":"Carnegie Mellon","graduation_year":2017}]'
-),
+  '[{"degree":"BSc Cybersecurity","school":"Carnegie Mellon","graduation_year":2017}]', 0.0),
 (
   '8bccbca2-eb0a-5a97-ad73-362f42bc7b9f',
   'Aria Patel',
@@ -148,8 +145,7 @@ INSERT INTO candidate (
   'Certified Product Designer',
   'Led end-to-end redesign of telehealth onboarding + design tokens library',
   '[{"title":"UX Designer","org":"Aether Health","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2018}]'
-),
+  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2018}]', 0.0),
 (
   'cdcf9da8-88e8-57fc-b24d-abb06572a1b5',
   'Aria Rhodes',
@@ -167,8 +163,7 @@ INSERT INTO candidate (
   NULL,
   'Shipped multi-tenant analytics platform; maintained component library',
   '[{"title":"Software Engineer","org":"Vector Labs","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BASc Computer Engineering","school":"University of Toronto","graduation_year":2019}]'
-),
+  '[{"degree":"BASc Computer Engineering","school":"University of Toronto","graduation_year":2019}]', 0.0),
 (
   '089e783c-49ae-5645-aa16-d2fadb63edd5',
   'Aria Nakamura',
@@ -186,8 +181,7 @@ INSERT INTO candidate (
   NULL,
   'Built offline-first field app; introduced modular monorepo',
   '[{"title":"Mobile Developer","org":"Southern Apps","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"UNSW","graduation_year":2012}]'
-),
+  '[{"degree":"BSc Computer Science","school":"UNSW","graduation_year":2012}]', 0.0),
 (
   '92a9b05b-b09d-5157-923b-39775fed7b35',
   'Aria Okafor',
@@ -205,8 +199,7 @@ INSERT INTO candidate (
   'Certified DevRel Engineer',
   'Grew developer community 3x; launched SDK reference apps',
   '[{"title":"Developer Advocate","org":"Polaris Cloud","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"Trinity College Dublin","graduation_year":2013}]'
-),
+  '[{"degree":"BSc Computer Science","school":"Trinity College Dublin","graduation_year":2013}]', 0.0),
 (
   '9f4ae982-d124-5b92-b255-7e0900465d8b',
   'Aria Hernandez',
@@ -224,8 +217,7 @@ INSERT INTO candidate (
   NULL,
   'Launched LLM-powered support agent reducing backlog 40%',
   '[{"title":"Product Manager","org":"Signal North","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"MBA","school":"MIT Sloan","graduation_year":2014}]'
-),
+  '[{"degree":"MBA","school":"MIT Sloan","graduation_year":2014}]', 0.0),
 (
   '14cf2ac3-27c7-56ac-8e53-6df2b5a0d2e1',
   'Aria Liu',
@@ -243,8 +235,7 @@ INSERT INTO candidate (
   NULL,
   'Led payments rewrite for 5M users; built event-driven notification service',
   '[{"title":"Backend Engineer","org":"Northwind Systems","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2015}]'
-),
+  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2015}]', 0.0),
 (
   'd0509444-6784-57a3-9dd9-0677414eae03',
   'Mason Patel',
@@ -262,8 +253,7 @@ INSERT INTO candidate (
   'Certified Staff Frontend Engineer',
   'Scaled design system adoption across 8 squads; implemented SSR streaming UI',
   '[{"title":"Frontend Engineer","org":"Helios Labs","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2016}]'
-),
+  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2016}]', 0.0),
 (
   'debcc7b5-850d-5b46-bfa9-8af18263c027',
   'Mason Rhodes',
@@ -281,8 +271,7 @@ INSERT INTO candidate (
   NULL,
   'Launched multilingual retrieval system; built realtime experimentation platform',
   '[{"title":"Data Scientist","org":"Nimbus AI","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2017}]'
-),
+  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2017}]', 0.0),
 (
   'da667bc3-c7ce-5c1c-8a8a-3c4c29a554ef',
   'Mason Nakamura',
@@ -300,8 +289,7 @@ INSERT INTO candidate (
   NULL,
   'Designed multi-region Kubernetes platform; reduced infra spend 18%',
   '[{"title":"Site Reliability Engineer","org":"Cloudforge","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2018}]'
-),
+  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2018}]', 0.0),
 (
   'fe7fc3b4-d956-5cba-8838-c099b6e9a393',
   'Mason Okafor',
@@ -319,8 +307,7 @@ INSERT INTO candidate (
   'Certified Data Platform Engineer',
   'Migration to lakehouse architecture; built governance catalog',
   '[{"title":"Data Engineer","org":"Aurora Analytics","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2019}]'
-),
+  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2019}]', 0.0),
 (
   '9b7ccd13-2fa8-537d-a4ff-aea2f5bf3cf8',
   'Mason Hernandez',
@@ -338,8 +325,7 @@ INSERT INTO candidate (
   NULL,
   'Implemented SDL program; automated dependency scanning for 400 repos',
   '[{"title":"Security Analyst","org":"ShieldWorks","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Cybersecurity","school":"Carnegie Mellon","graduation_year":2012}]'
-),
+  '[{"degree":"BSc Cybersecurity","school":"Carnegie Mellon","graduation_year":2012}]', 0.0),
 (
   '8851da08-f803-538e-bc34-ef9c267782d8',
   'Mason Liu',
@@ -357,8 +343,7 @@ INSERT INTO candidate (
   NULL,
   'Led end-to-end redesign of telehealth onboarding + design tokens library',
   '[{"title":"UX Designer","org":"Aether Health","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2013}]'
-),
+  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2013}]', 0.0),
 (
   '65aedcdc-3fe8-5826-a0eb-9fba35e08b7b',
   'Lena Patel',
@@ -376,8 +361,7 @@ INSERT INTO candidate (
   'Certified Full Stack Engineer',
   'Shipped multi-tenant analytics platform; maintained component library',
   '[{"title":"Software Engineer","org":"Vector Labs","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BASc Computer Engineering","school":"University of Toronto","graduation_year":2014}]'
-),
+  '[{"degree":"BASc Computer Engineering","school":"University of Toronto","graduation_year":2014}]', 0.0),
 (
   'e6cf5c23-d40b-5150-ae92-2ab64e00364d',
   'Lena Rhodes',
@@ -395,8 +379,7 @@ INSERT INTO candidate (
   NULL,
   'Built offline-first field app; introduced modular monorepo',
   '[{"title":"Mobile Developer","org":"Southern Apps","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"UNSW","graduation_year":2015}]'
-),
+  '[{"degree":"BSc Computer Science","school":"UNSW","graduation_year":2015}]', 0.0),
 (
   '57f1004c-8063-5e29-81f6-997c484e2e84',
   'Lena Nakamura',
@@ -414,8 +397,7 @@ INSERT INTO candidate (
   NULL,
   'Grew developer community 3x; launched SDK reference apps',
   '[{"title":"Developer Advocate","org":"Polaris Cloud","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"Trinity College Dublin","graduation_year":2016}]'
-),
+  '[{"degree":"BSc Computer Science","school":"Trinity College Dublin","graduation_year":2016}]', 0.0),
 (
   'a2f4ec49-0ff1-56a7-b0ed-6f55a1068c11',
   'Lena Okafor',
@@ -433,8 +415,7 @@ INSERT INTO candidate (
   'Certified AI Product Manager',
   'Launched LLM-powered support agent reducing backlog 40%',
   '[{"title":"Product Manager","org":"Signal North","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"MBA","school":"MIT Sloan","graduation_year":2017}]'
-),
+  '[{"degree":"MBA","school":"MIT Sloan","graduation_year":2017}]', 0.0),
 (
   '238a93e7-aaa4-5d05-9216-1a5a474851aa',
   'Lena Hernandez',
@@ -452,8 +433,7 @@ INSERT INTO candidate (
   NULL,
   'Led payments rewrite for 5M users; built event-driven notification service',
   '[{"title":"Backend Engineer","org":"Northwind Systems","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2018}]'
-),
+  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2018}]', 0.0),
 (
   '44a08630-c2ea-5360-98e3-a8d0ed90af58',
   'Lena Liu',
@@ -471,8 +451,7 @@ INSERT INTO candidate (
   NULL,
   'Scaled design system adoption across 8 squads; implemented SSR streaming UI',
   '[{"title":"Frontend Engineer","org":"Helios Labs","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2019}]'
-),
+  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2019}]', 0.0),
 (
   'f430d6c7-ba3e-5dad-8845-1a683caad2d7',
   'Noah Patel',
@@ -490,8 +469,7 @@ INSERT INTO candidate (
   'Certified Machine Learning Engineer',
   'Launched multilingual retrieval system; built realtime experimentation platform',
   '[{"title":"Data Scientist","org":"Nimbus AI","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2012}]'
-),
+  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2012}]', 0.0),
 (
   'f6887948-e01c-58c0-adb9-1cc570e7b022',
   'Noah Rhodes',
@@ -509,8 +487,7 @@ INSERT INTO candidate (
   NULL,
   'Designed multi-region Kubernetes platform; reduced infra spend 18%',
   '[{"title":"Site Reliability Engineer","org":"Cloudforge","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2013}]'
-),
+  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2013}]', 0.0),
 (
   '345dc9a0-be0b-54cb-9c78-ff6b2e95eba8',
   'Noah Nakamura',
@@ -528,8 +505,7 @@ INSERT INTO candidate (
   NULL,
   'Migration to lakehouse architecture; built governance catalog',
   '[{"title":"Data Engineer","org":"Aurora Analytics","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2014}]'
-),
+  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2014}]', 0.0),
 (
   '60f2cef5-8f47-5db3-ab31-6fcb768b5048',
   'Noah Okafor',
@@ -547,8 +523,7 @@ INSERT INTO candidate (
   'Certified Security Engineer',
   'Implemented SDL program; automated dependency scanning for 400 repos',
   '[{"title":"Security Analyst","org":"ShieldWorks","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Cybersecurity","school":"Carnegie Mellon","graduation_year":2015}]'
-),
+  '[{"degree":"BSc Cybersecurity","school":"Carnegie Mellon","graduation_year":2015}]', 0.0),
 (
   'ffafb67a-6833-572c-b639-72c58470e6fe',
   'Noah Hernandez',
@@ -566,8 +541,7 @@ INSERT INTO candidate (
   NULL,
   'Led end-to-end redesign of telehealth onboarding + design tokens library',
   '[{"title":"UX Designer","org":"Aether Health","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2016}]'
-),
+  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2016}]', 0.0),
 (
   '4d277134-ec6a-5ffd-86cc-728c8e97935d',
   'Noah Liu',
@@ -585,8 +559,7 @@ INSERT INTO candidate (
   NULL,
   'Shipped multi-tenant analytics platform; maintained component library',
   '[{"title":"Software Engineer","org":"Vector Labs","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BASc Computer Engineering","school":"University of Toronto","graduation_year":2017}]'
-),
+  '[{"degree":"BASc Computer Engineering","school":"University of Toronto","graduation_year":2017}]', 0.0),
 (
   'ed6d1f1d-2bdb-5d38-b89e-4c3c542cdcec',
   'Sofia Patel',
@@ -604,8 +577,7 @@ INSERT INTO candidate (
   'Certified Mobile Engineer',
   'Built offline-first field app; introduced modular monorepo',
   '[{"title":"Mobile Developer","org":"Southern Apps","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"UNSW","graduation_year":2018}]'
-),
+  '[{"degree":"BSc Computer Science","school":"UNSW","graduation_year":2018}]', 0.0),
 (
   '6fb976b1-8bf3-5060-a4f7-c4ba95b59ffa',
   'Sofia Rhodes',
@@ -623,8 +595,7 @@ INSERT INTO candidate (
   NULL,
   'Grew developer community 3x; launched SDK reference apps',
   '[{"title":"Developer Advocate","org":"Polaris Cloud","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"Trinity College Dublin","graduation_year":2019}]'
-),
+  '[{"degree":"BSc Computer Science","school":"Trinity College Dublin","graduation_year":2019}]', 0.0),
 (
   'acf4ddc5-96ee-5469-8376-40a0441c4461',
   'Sofia Nakamura',
@@ -642,8 +613,7 @@ INSERT INTO candidate (
   NULL,
   'Launched LLM-powered support agent reducing backlog 40%',
   '[{"title":"Product Manager","org":"Signal North","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"MBA","school":"MIT Sloan","graduation_year":2012}]'
-),
+  '[{"degree":"MBA","school":"MIT Sloan","graduation_year":2012}]', 0.0),
 (
   '4d4acb0c-dfbe-527e-a28f-6083cc05f6e3',
   'Sofia Okafor',
@@ -661,8 +631,7 @@ INSERT INTO candidate (
   'Certified Senior Backend Engineer',
   'Led payments rewrite for 5M users; built event-driven notification service',
   '[{"title":"Backend Engineer","org":"Northwind Systems","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2013}]'
-),
+  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2013}]', 0.0),
 (
   'ee0270b0-ea01-5ccb-a5a8-45724e28f581',
   'Sofia Hernandez',
@@ -680,8 +649,7 @@ INSERT INTO candidate (
   NULL,
   'Scaled design system adoption across 8 squads; implemented SSR streaming UI',
   '[{"title":"Frontend Engineer","org":"Helios Labs","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2014}]'
-),
+  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2014}]', 0.0),
 (
   '8929800b-106d-55d4-b7d6-ad1b1cc78f43',
   'Sofia Liu',
@@ -699,8 +667,7 @@ INSERT INTO candidate (
   NULL,
   'Launched multilingual retrieval system; built realtime experimentation platform',
   '[{"title":"Data Scientist","org":"Nimbus AI","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2015}]'
-),
+  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2015}]', 0.0),
 (
   '6de668cc-3475-5ff9-83c2-19fa9699f22d',
   'Eli Patel',
@@ -718,8 +685,7 @@ INSERT INTO candidate (
   'Certified Platform Engineer',
   'Designed multi-region Kubernetes platform; reduced infra spend 18%',
   '[{"title":"Site Reliability Engineer","org":"Cloudforge","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2016}]'
-),
+  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2016}]', 0.0),
 (
   '397c66a5-8869-5e7f-b76b-12e768b09592',
   'Eli Rhodes',
@@ -737,8 +703,7 @@ INSERT INTO candidate (
   NULL,
   'Migration to lakehouse architecture; built governance catalog',
   '[{"title":"Data Engineer","org":"Aurora Analytics","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2017}]'
-),
+  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2017}]', 0.0),
 (
   'b5f49e92-377c-5b12-b016-8cfd053b74fe',
   'Eli Nakamura',
@@ -756,8 +721,7 @@ INSERT INTO candidate (
   NULL,
   'Implemented SDL program; automated dependency scanning for 400 repos',
   '[{"title":"Security Analyst","org":"ShieldWorks","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Cybersecurity","school":"Carnegie Mellon","graduation_year":2018}]'
-),
+  '[{"degree":"BSc Cybersecurity","school":"Carnegie Mellon","graduation_year":2018}]', 0.0),
 (
   'a1bfc9a8-a1c5-56e2-b9bb-110705c960f0',
   'Eli Okafor',
@@ -775,8 +739,7 @@ INSERT INTO candidate (
   'Certified Product Designer',
   'Led end-to-end redesign of telehealth onboarding + design tokens library',
   '[{"title":"UX Designer","org":"Aether Health","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2019}]'
-),
+  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2019}]', 0.0),
 (
   '403b1214-6b0a-595f-8d64-4677c5bb1978',
   'Eli Hernandez',
@@ -794,8 +757,7 @@ INSERT INTO candidate (
   NULL,
   'Shipped multi-tenant analytics platform; maintained component library',
   '[{"title":"Software Engineer","org":"Vector Labs","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BASc Computer Engineering","school":"University of Toronto","graduation_year":2012}]'
-),
+  '[{"degree":"BASc Computer Engineering","school":"University of Toronto","graduation_year":2012}]', 0.0),
 (
   'bac80fc4-0968-5fdd-9b84-aa62c367a6ea',
   'Eli Liu',
@@ -813,8 +775,7 @@ INSERT INTO candidate (
   NULL,
   'Built offline-first field app; introduced modular monorepo',
   '[{"title":"Mobile Developer","org":"Southern Apps","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"UNSW","graduation_year":2013}]'
-),
+  '[{"degree":"BSc Computer Science","school":"UNSW","graduation_year":2013}]', 0.0),
 (
   '64b2b375-2bbd-584e-aaf3-b5d8fd06eb62',
   'Priya Patel',
@@ -832,8 +793,7 @@ INSERT INTO candidate (
   'Certified DevRel Engineer',
   'Grew developer community 3x; launched SDK reference apps',
   '[{"title":"Developer Advocate","org":"Polaris Cloud","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"Trinity College Dublin","graduation_year":2014}]'
-),
+  '[{"degree":"BSc Computer Science","school":"Trinity College Dublin","graduation_year":2014}]', 0.0),
 (
   'cc78be21-4734-58ba-a73f-5665c959fb90',
   'Priya Rhodes',
@@ -851,8 +811,7 @@ INSERT INTO candidate (
   NULL,
   'Launched LLM-powered support agent reducing backlog 40%',
   '[{"title":"Product Manager","org":"Signal North","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"MBA","school":"MIT Sloan","graduation_year":2015}]'
-),
+  '[{"degree":"MBA","school":"MIT Sloan","graduation_year":2015}]', 0.0),
 (
   'd895ab0a-03fc-5614-9625-c619fb1e7f46',
   'Priya Nakamura',
@@ -870,8 +829,7 @@ INSERT INTO candidate (
   NULL,
   'Led payments rewrite for 5M users; built event-driven notification service',
   '[{"title":"Backend Engineer","org":"Northwind Systems","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2016}]'
-),
+  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2016}]', 0.0),
 (
   'e104cb91-d013-5840-9a7f-a20b7b3eeafb',
   'Priya Okafor',
@@ -889,8 +847,7 @@ INSERT INTO candidate (
   'Certified Staff Frontend Engineer',
   'Scaled design system adoption across 8 squads; implemented SSR streaming UI',
   '[{"title":"Frontend Engineer","org":"Helios Labs","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2017}]'
-),
+  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2017}]', 0.0),
 (
   '7540546f-ba7f-5d3a-a1e1-3e9ef3c9081c',
   'Priya Hernandez',
@@ -908,8 +865,7 @@ INSERT INTO candidate (
   NULL,
   'Launched multilingual retrieval system; built realtime experimentation platform',
   '[{"title":"Data Scientist","org":"Nimbus AI","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2018}]'
-),
+  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2018}]', 0.0),
 (
   '1f77ed31-1e25-56f3-9f4b-9f3179e1f2aa',
   'Priya Liu',
@@ -927,8 +883,7 @@ INSERT INTO candidate (
   NULL,
   'Designed multi-region Kubernetes platform; reduced infra spend 18%',
   '[{"title":"Site Reliability Engineer","org":"Cloudforge","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2019}]'
-),
+  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2019}]', 0.0),
 (
   '247dedf8-12a6-587d-9e6c-dc443a2dabb8',
   'Diego Patel',
@@ -946,8 +901,7 @@ INSERT INTO candidate (
   'Certified Data Platform Engineer',
   'Migration to lakehouse architecture; built governance catalog',
   '[{"title":"Data Engineer","org":"Aurora Analytics","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2012}]'
-),
+  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2012}]', 0.0),
 (
   'd261a44b-6caf-59b6-9766-284e0c2a6b6b',
   'Diego Rhodes',
@@ -965,8 +919,7 @@ INSERT INTO candidate (
   NULL,
   'Implemented SDL program; automated dependency scanning for 400 repos',
   '[{"title":"Security Analyst","org":"ShieldWorks","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Cybersecurity","school":"Carnegie Mellon","graduation_year":2013}]'
-),
+  '[{"degree":"BSc Cybersecurity","school":"Carnegie Mellon","graduation_year":2013}]', 0.0),
 (
   'f1ffe6aa-12e7-5f3c-93b2-7571b5df7f04',
   'Diego Nakamura',
@@ -984,8 +937,7 @@ INSERT INTO candidate (
   NULL,
   'Led end-to-end redesign of telehealth onboarding + design tokens library',
   '[{"title":"UX Designer","org":"Aether Health","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2014}]'
-),
+  '[{"degree":"BA Interaction Design","school":"Goldsmiths","graduation_year":2014}]', 0.0),
 (
   '019c0e73-acdb-51e0-8b03-113202479c39',
   'Diego Okafor',
@@ -1003,8 +955,7 @@ INSERT INTO candidate (
   'Certified Full Stack Engineer',
   'Shipped multi-tenant analytics platform; maintained component library',
   '[{"title":"Software Engineer","org":"Vector Labs","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BASc Computer Engineering","school":"University of Toronto","graduation_year":2015}]'
-),
+  '[{"degree":"BASc Computer Engineering","school":"University of Toronto","graduation_year":2015}]', 0.0),
 (
   'd61267f0-fb53-5b33-970f-55b66f73803b',
   'Diego Hernandez',
@@ -1022,8 +973,7 @@ INSERT INTO candidate (
   NULL,
   'Built offline-first field app; introduced modular monorepo',
   '[{"title":"Mobile Developer","org":"Southern Apps","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"UNSW","graduation_year":2016}]'
-),
+  '[{"degree":"BSc Computer Science","school":"UNSW","graduation_year":2016}]', 0.0),
 (
   '85399145-dfd8-5b54-8557-64d1e221a6d3',
   'Diego Liu',
@@ -1041,8 +991,7 @@ INSERT INTO candidate (
   NULL,
   'Grew developer community 3x; launched SDK reference apps',
   '[{"title":"Developer Advocate","org":"Polaris Cloud","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"Trinity College Dublin","graduation_year":2017}]'
-),
+  '[{"degree":"BSc Computer Science","school":"Trinity College Dublin","graduation_year":2017}]', 0.0),
 (
   'ef3c5723-fd50-528b-80e2-6c38ddd53cc1',
   'Mina Patel',
@@ -1060,8 +1009,7 @@ INSERT INTO candidate (
   'Certified AI Product Manager',
   'Launched LLM-powered support agent reducing backlog 40%',
   '[{"title":"Product Manager","org":"Signal North","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"MBA","school":"MIT Sloan","graduation_year":2018}]'
-),
+  '[{"degree":"MBA","school":"MIT Sloan","graduation_year":2018}]', 0.0),
 (
   '64be175b-ddab-5f28-b224-7d6bf0b4eef6',
   'Mina Rhodes',
@@ -1079,8 +1027,7 @@ INSERT INTO candidate (
   NULL,
   'Led payments rewrite for 5M users; built event-driven notification service',
   '[{"title":"Backend Engineer","org":"Northwind Systems","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2019}]'
-),
+  '[{"degree":"BSc Computer Science","school":"University of Waterloo","graduation_year":2019}]', 0.0),
 (
   '2506a2da-f14c-5604-bbd1-3ed8bf83a557',
   'Mina Nakamura',
@@ -1098,8 +1045,7 @@ INSERT INTO candidate (
   NULL,
   'Scaled design system adoption across 8 squads; implemented SSR streaming UI',
   '[{"title":"Frontend Engineer","org":"Helios Labs","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2012}]'
-),
+  '[{"degree":"BSc Software Engineering","school":"McGill University","graduation_year":2012}]', 0.0),
 (
   '6e682f6a-72f8-50b9-8b6d-75c4f19ed8e7',
   'Mina Okafor',
@@ -1117,8 +1063,7 @@ INSERT INTO candidate (
   'Certified Machine Learning Engineer',
   'Launched multilingual retrieval system; built realtime experimentation platform',
   '[{"title":"Data Scientist","org":"Nimbus AI","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2013}]'
-),
+  '[{"degree":"MSc Applied Math","school":"University of Toronto","graduation_year":2013}]', 0.0),
 (
   'ec83e2dd-a9bf-5398-8c2c-dafc684d247a',
   'Mina Hernandez',
@@ -1136,8 +1081,7 @@ INSERT INTO candidate (
   NULL,
   'Designed multi-region Kubernetes platform; reduced infra spend 18%',
   '[{"title":"Site Reliability Engineer","org":"Cloudforge","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2014}]'
-),
+  '[{"degree":"BSc Electrical Engineering","school":"Georgia Tech","graduation_year":2014}]', 0.0),
 (
   '95253e2e-589d-5e6a-8853-44866411780a',
   'Mina Liu',
@@ -1155,6 +1099,5 @@ INSERT INTO candidate (
   NULL,
   'Migration to lakehouse architecture; built governance catalog',
   '[{"title":"Data Engineer","org":"Aurora Analytics","start_date":"2018-01-01","end_date":"2022-06-01"}]',
-  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2015}]'
-)
+  '[{"degree":"BSc Information Systems","school":"UBC","graduation_year":2015}]', 0.0)
 ON CONFLICT (candidate_id) DO NOTHING;

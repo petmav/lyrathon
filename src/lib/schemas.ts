@@ -191,6 +191,11 @@ export const shortlistResultSchema = z.object({
           if (!Number.isFinite(n)) return value;
           return Math.min(1, Math.max(0, n));
         }, z.number().min(0).max(1)),
+        verification_scores: z.object({
+          resume: z.number().nullable(),
+          projects: z.number().nullable(),
+          education: z.number().nullable(),
+        }).optional(),
       }),
     )
     .min(0)

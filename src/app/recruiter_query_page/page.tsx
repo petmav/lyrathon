@@ -4,6 +4,7 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import { JSX } from "react/jsx-runtime";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
+import CandidateDetailModal from "@/components/CandidateDetailModal";
 
 const THINKING_PHRASES = [
     "Thinking...",
@@ -41,6 +42,11 @@ type ShortlistedCandidate = {
     match_summary: string;
     recommended_action: string;
     confidence: number;
+    verification_scores?: {
+        resume: number | null;
+        projects: number | null;
+        education: number | null;
+    };
 };
 
 type ShortlistResult = {
@@ -93,6 +99,7 @@ export default function RecruiterQueryPage(): JSX.Element {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
 
     const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -394,14 +401,19 @@ export default function RecruiterQueryPage(): JSX.Element {
                                 <line x1="3" y1="18" x2="21" y2="18"></line>
                             </svg>
                         </button>
-                        <span className="brand-mark">L</span>
-                        <span className="brand-text" style={{ marginLeft: 24 }}>Linkdr</span>
+                        <Link href="/" aria-label="Linkdr homepage" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}>
+                            <span className="brand-mark">L</span>
+                            <span className="brand-text" style={{ marginLeft: 24 }}>Linkdr</span>
+                        </Link>
                         <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 24px' }} />
                         <p className="eyebrow" style={{ margin: 0, fontSize: '0.85rem', letterSpacing: '0.05em', color: 'var(--muted)' }}>RECRUITER CONSOLE</p>
                     </div>
-                </div>
-                <div className='logoutWrap'>
-                    {/* ... (keep logout) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                        <nav className="nav" aria-label="Primary">
+                            <Link className="nav-link" href="/">Home</Link>
+                            <button className="nav-link btn text" onClick={handleLogout}>Logout</button>
+                        </nav>
+                    </div>
                 </div>
             </header>
 
@@ -431,7 +443,7 @@ export default function RecruiterQueryPage(): JSX.Element {
                             setIsSidebarOpen(false);
                         }}
                         className="btn secondary"
-                        style={{ width: '100%', justifyContent: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}
+                        style={{ width: '100%', justifyContent: 'center', gap: 8, background: 'rgba(255, 255, 255, 0.8)', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 600 }}
                     >
                         <span>+</span> New Query
                     </button>
@@ -510,7 +522,7 @@ export default function RecruiterQueryPage(): JSX.Element {
 
                 {/* MAIN CONTENT AREA */}
                 <main className="page-main" style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                    <div className="scroll-container" style={{ flex: 1, overflowY: 'auto', padding: '40px 0 120px' }} ref={listRef}>
+                    <div className="scroll-container" style={{ flex: 1, overflowY: 'auto', padding: '100px 0 120px' }} ref={listRef}>
                         <div className="container" style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', position: 'relative', width: '100%', maxWidth: 1000, margin: '0 auto' }}>
 
                             {/* Hero Empty State */}
@@ -606,6 +618,7 @@ export default function RecruiterQueryPage(): JSX.Element {
                                                         <div key={c.candidate_id} className="glass-card" style={{ padding: 20, transition: 'transform 0.2s', cursor: 'pointer' }}
                                                             onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
                                                             onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                                                            onClick={() => setSelectedCandidateId(c.candidate_id)}
                                                         >
                                                             <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                                                                 <div>
@@ -622,6 +635,14 @@ export default function RecruiterQueryPage(): JSX.Element {
                                                                     </div>
                                                                 </div>
                                                             </header>
+
+                                                            {/* Verification Bars */}
+                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+                                                                <VerificationBar label="Resume" score={c.verification_scores?.resume} />
+                                                                <VerificationBar label="Projects" score={c.verification_scores?.projects} />
+                                                                <VerificationBar label="Education" score={c.verification_scores?.education} />
+                                                            </div>
+
                                                             <div style={{ fontSize: '0.95rem', lineHeight: 1.6, color: 'var(--muted)', marginBottom: 16 }}>
                                                                 {c.match_summary}
                                                             </div>
@@ -707,6 +728,47 @@ export default function RecruiterQueryPage(): JSX.Element {
                         </div>
                     </div>
                 </main>
+            </div>
+            {selectedCandidateId && (
+                <CandidateDetailModal
+                    candidateId={selectedCandidateId}
+                    onClose={() => setSelectedCandidateId(null)}
+                />
+            )}
+        </div>
+    );
+}
+
+function VerificationBar({ label, score }: { label: string; score?: number | null }) {
+    const value = score !== null && score !== undefined ? Math.round(score * 10) : 0;
+    const isActive = score !== null && score !== undefined;
+
+    // Color based on score
+    let color = 'var(--muted)';
+    if (isActive) {
+        if (value >= 7) color = '#4ade80'; // Green
+        else if (value >= 4) color = '#facc15'; // Yellow
+        else color = '#f87171'; // Red
+    }
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                <span>{label}</span>
+                {isActive && <span style={{ color }}>{value}/10</span>}
+            </div>
+            <div style={{ display: 'flex', gap: 2, height: 4 }}>
+                {[...Array(10)].map((_, i) => (
+                    <div
+                        key={i}
+                        style={{
+                            flex: 1,
+                            background: i < value ? color : 'rgba(255,255,255,0.1)',
+                            borderRadius: 2,
+                            opacity: i < value ? 1 : 0.3
+                        }}
+                    />
+                ))}
             </div>
         </div>
     );
