@@ -178,6 +178,53 @@ export default function CandidateDetailModal({ candidateId, onClose }: Candidate
                                     </div>
                                 </div>
                             )}
+
+                            {/* Contact Info */}
+                            <div>
+                                <h3 className="eyebrow" style={{ marginBottom: 16, color: "var(--accent)" }}>Contact</h3>
+                                <div className="glass-card" style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ overflow: 'hidden' }}>
+                                        <div style={{ fontWeight: 700, wordBreak: 'break-word' }}>{candidate.email}</div>
+                                        {candidate.location && (
+                                            <div style={{ fontSize: '0.95rem', color: 'var(--muted)' }}>{candidate.location}</div>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <a
+                                            href={`mailto:${candidate.email}`}
+                                            style={{
+                                                background: 'var(--accent)',
+                                                color: '#fff',
+                                                padding: '8px 12px',
+                                                borderRadius: 6,
+                                                textDecoration: 'none',
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            Email
+                                        </a>
+                                        <button
+                                            onClick={() => {
+                                                try {
+                                                    navigator.clipboard?.writeText(candidate.email || '');
+                                                } catch (e) {
+                                                    /* ignore */
+                                                }
+                                            }}
+                                            style={{
+                                                padding: '8px 12px',
+                                                borderRadius: 6,
+                                                border: '1px solid rgba(255,255,255,0.06)',
+                                                background: 'transparent',
+                                                color: 'var(--text)'
+                                            }}
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
                         </div>
                     ) : null}
                 </div>
