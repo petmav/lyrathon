@@ -129,6 +129,26 @@ export async function createShortlist(
 
   try {
     const parsed = shortlistResultSchema.parse(JSON.parse(outputText));
+
+    // Post-process: Repair valid UUIDs if LLM returned mismatched IDs (e.g. emails)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    parsed.shortlist = parsed.shortlist.map(entry => {
+      // If ID is valid, keep it
+      if (uuidRegex.test(entry.candidate_id)) return entry;
+
+      // If invalid, try to find the candidate by email or name in our source list
+      const match = limitedCandidates.find(
+        c => c.email === entry.candidate_id || c.email === entry.email || c.name === entry.name
+      );
+
+      if (match) {
+        console.log(`Repaired candidate ID for ${entry.name}: ${entry.candidate_id} -> ${match.candidate_id}`);
+        return { ...entry, candidate_id: match.candidate_id };
+      }
+
+      return entry;
+    });
+
     return parsed;
   } catch (error) {
     console.error('Shortlist parsing failed, falling back to raw matches', error);
@@ -176,7 +196,7 @@ function buildPrompt(query: string, candidates: CandidateResult[], limit: number
   }
 
   lines.push(
-    `Return up to ${limit} candidates with confidence scores (as a float between 0.0 and 1.0), detailed reasoning, action items, and an overall summary. Each shortlist entry must include candidate_id, name, age, email, location, visa_status, experience_years, salary_expectation, match_summary, recommended_action, and confidence.`,
+    `Return up to ${limit} candidates with confidence scores (as a float between 0.0 and 1.0), detailed reasoning, action items, and an overall summary. Each shortlist entry must include the EXACT candidate_id (UUID) provided in parentheses, name, age, email, location, visa_status, experience_years, salary_expectation, match_summary, recommended_action, and confidence.`,
   );
   return lines.filter(Boolean).join('\n');
 }

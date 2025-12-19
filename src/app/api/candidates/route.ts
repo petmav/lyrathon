@@ -1,4 +1,4 @@
-import { NextResponse, NextRequest} from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { searchCandidates, type CandidateFilters } from '@/lib/candidate-search';
 import { logEvent } from '@/lib/logger';
 import {
@@ -65,6 +65,12 @@ export async function GET(request: Request) {
 
     if (!candidate_id) {
       return NextResponse.json({ error: 'candidate_id is required' }, { status: 400 });
+    }
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(candidate_id)) {
+      console.warn(`Invalid UUID requested: ${candidate_id}`);
+      return NextResponse.json({ data: null, error: 'Invalid candidate ID format' }, { status: 400 });
     }
 
     const result = await db.query(

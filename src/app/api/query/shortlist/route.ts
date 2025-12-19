@@ -73,6 +73,16 @@ export async function POST(request: Request) {
     // Hydrate shortlist with verification scores
     const hydratedShortlist = await Promise.all(
       shortlist.shortlist.map(async (candidate) => {
+        // Validate UUID to prevent DB crashes if LLM hallucinates an invalid ID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!candidate.candidate_id || !uuidRegex.test(candidate.candidate_id)) {
+          console.warn(`Invalid UUID returned by LLM: ${candidate.candidate_id}`);
+          return {
+            ...candidate,
+            verification_scores: { resume: null, projects: null, education: null }
+          };
+        }
+
         const verifications = await db.query(
           `SELECT run_type, confidence
            FROM verification_runs
