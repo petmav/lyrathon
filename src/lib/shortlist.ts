@@ -176,7 +176,7 @@ function buildPrompt(query: string, candidates: CandidateResult[], limit: number
   }
 
   lines.push(
-    `Return up to ${limit} candidates with confidence scores, detailed reasoning, action items, and an overall summary. Each shortlist entry must include candidate_id, name, age, email, location, visa_status, experience_years, salary_expectation, match_summary, recommended_action, and confidence.`,
+    `Return up to ${limit} candidates with confidence scores (as a float between 0.0 and 1.0), detailed reasoning, action items, and an overall summary. Each shortlist entry must include candidate_id, name, age, email, location, visa_status, experience_years, salary_expectation, match_summary, recommended_action, and confidence.`,
   );
   return lines.filter(Boolean).join('\n');
 }
